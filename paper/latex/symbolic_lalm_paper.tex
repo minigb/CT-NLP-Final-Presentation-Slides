@@ -356,10 +356,13 @@ validation set.
 \toprule
 Metric & Value \\
 \midrule
-Validation reconstruction loss & 0.00918 \\
-Binary feature accuracy & 0.99777 \\
-Continuous feature MSE & 0.00172 \\
-Codebook utilization (books 1--4) & 31.3\% / 71.9\% / 80.7\% / 81.2\% \\
+Reconstr.\ loss (val.) & 0.00918 \\
+Binary feature acc.    & 0.99777 \\
+Continuous MSE         & 0.00172 \\
+Codebook util.\ bk1   & 31\%    \\
+Codebook util.\ bk2   & 72\%    \\
+Codebook util.\ bk3   & 81\%    \\
+Codebook util.\ bk4   & 81\%    \\
 \bottomrule
 \end{tabular}
 \caption{Codec reconstruction quality.  Per-window binary accuracy is $1.000$ on all
@@ -416,16 +419,16 @@ budget to validate the interface design (3,000 steps).
 \begin{table}[h]
 \centering
 \small
-\begin{tabular}{lcccc}
+\begin{tabular}{lccc}
 \toprule
-Condition & Test CE & Test Acc & Prefix-8 CE & Gate \\
+Condition & Test CE & Test Acc & Gate \\
 \midrule
-Aligned \splan{}                          & \textbf{5.766} & \textbf{0.1097} & \textbf{5.982} & 0.0033 \\
-\quad$\hookrightarrow$ Shuffled \splan{} & 5.785 & 0.1067 & 6.000 & 0.0032 \\
-\quad$\hookrightarrow$ Dummy stream      & 5.785 & 0.1068 & 6.004 & 0.0034 \\
+Aligned \splan{}                          & \textbf{5.766} & \textbf{0.1097} & 0.0033 \\
+\quad$\hookrightarrow$ Shuffled \splan{} & 5.785 & 0.1067 & 0.0032 \\
+\quad$\hookrightarrow$ Dummy stream      & 5.785 & 0.1068 & 0.0034 \\
 \bottomrule
 \end{tabular}
-\caption{Stream-native comparison.  Sequence length 557 tokens, 0\% truncation.  All
+\caption{Stream-native comparison (sequence length 557, 0\% truncation).  All
   three conditions differ only in the symbolic stream variant.}
 \label{tab:warmup}
 \end{table}
@@ -445,18 +448,18 @@ symbolic stream variant.
 \begin{table}[h]
 \centering
 \small
-\begin{tabular}{lcccc}
+\begin{tabular}{lccc}
 \toprule
-Condition & Test CE & Test PPL & Test Acc & Gate \\
+Condition & Test CE & Test Acc & Gate \\
 \midrule
-Reason-only baseline               & 5.859 & 350.4 & 0.1039 & 0.000 \\
-Aligned \splan{} stream            & \textbf{5.600} & \textbf{270.4} & \textbf{0.1207} & 0.177 \\
-\quad$\hookrightarrow$ Shuffled \splan{} & 5.614 & 274.3 & 0.1191 & 0.167 \\
-\quad$\hookrightarrow$ Dummy stream      & 5.614 & 274.3 & 0.1193 & 0.163 \\
+Reason-only baseline               & 5.859 & 0.1039 & 0.000 \\
+Aligned \splan{}                   & \textbf{5.600} & \textbf{0.1207} & 0.177 \\
+\quad$\hookrightarrow$ Shuffled    & 5.614 & 0.1191 & 0.167 \\
+\quad$\hookrightarrow$ Dummy       & 5.614 & 0.1193 & 0.163 \\
 \bottomrule
 \end{tabular}
 \caption{Complete four-condition comparison.  All conditions trained identically;
-  only the symbolic stream variant differs.  This is our primary empirical result.}
+  only the symbolic stream variant differs.  Primary empirical result.}
 \label{tab:hardening}
 \end{table}
 
@@ -492,13 +495,13 @@ evaluation (Table~\ref{tab:hardening}) decomposes as:
 \begin{table}[h]
 \centering
 \small
-\begin{tabular}{lccc}
+\begin{tabular}{lcc}
 \toprule
-Comparison & Training steps & Setup & $\Delta$ aligned vs.\ shuffled \\
+Comparison & Steps & $\Delta$ (aligned vs.\ shuffled) \\
 \midrule
-Proxy task                  & 5,000 & Frozen codec + proxy head & $-0.034$ \\
-Stream-native warmup        & 3,000 & Full stream integration   & $-0.018$ \\
-Four-condition hardening    & 800   & Matched, identical setup  & $-0.014$ \\
+Proxy task           & 5,000 & $-0.034$ \\
+Stream-native warmup & 3,000 & $-0.018$ \\
+Four-cond.\ hardening & 800  & $-0.014$ \\
 \bottomrule
 \end{tabular}
 \caption{Alignment-specific gain across three independent controlled comparisons.
@@ -710,17 +713,18 @@ validation examples from Slakh Track01501.
 \begin{table}[h]
 \centering
 \small
-\begin{tabular}{lccp{2.6cm}}
+\begin{tabular}{lcc}
 \toprule
-Window & Binary Acc & Cont. MSE & Unique codes (books 1--4) \\
+Window & Binary Acc & Cont.\ MSE \\
 \midrule
-w000 (0--30 s)   & 1.000 & 0.00174 & 15 / 15 / 17 / 17 \\
-w001 (30--60 s)  & 1.000 & 0.00246 & 20 / 24 / 26 / 25 \\
-w003 (90--120 s) & 1.000 & 0.00130 & 17 / 17 / 21 / 25 \\
+w000 (0--30 s)   & 1.000 & 0.00174 \\
+w001 (30--60 s)  & 1.000 & 0.00246 \\
+w003 (90--120 s) & 1.000 & 0.00130 \\
 \bottomrule
 \end{tabular}
 \caption{Fixed validation window statistics.  All windows achieve perfect binary
-  feature reconstruction.}
+  feature reconstruction.  Unique codes per book range from 15--26 across windows,
+  confirming no single-code collapse.}
 \label{tab:codec_gallery}
 \end{table}
 
