@@ -6,190 +6,191 @@
 
 ## Slide 1 — Title
 
-Good afternoon, everyone. I'm Minhee, presenting our CT-NLP final project on behalf of Dabin, Jiaxian, Aner, and myself.
+Good afternoon, everyone. I'm Minhee, and I'm presenting on behalf of Dabin, Jiaxian, Aner, and myself.
 
-The project's central question is on the slide: audio language models handle sound very well — timbre, texture, acoustic qualities — but musical structure lives in MIDI, not in waveforms. Key signatures, chord progressions, meter — these are essentially invisible to audio codecs. Can we inject that symbolic knowledge into a language model in a controlled, verifiable way?
+Think about what a music language model actually hears. It hears timbre, texture, acoustic energy. What it doesn't hear — reliably — is what key a piece is in, how the chord progression moves, where the phrase boundaries are, or even which instrument is playing which stem. Those things live in MIDI. Not in waveforms.
 
-That's what this work is about.
+So the question we asked ourselves was: can we take that symbolic MIDI knowledge and actually inject it into an audio language model — in a way that's controlled, verifiable, and rigorous enough to publish? That's what this project is.
 
 ---
 
 ## Slide 2 — Problem
 
-Here's the gap more precisely. The left column shows what audio tokens can encode well: timbre, loudness, rough tempo. The right column shows what they reliably miss: key signature, exact instrument identity at the stem level, precise meter, and phrase boundaries.
+And the gap is real. The model handles timbre, loudness, rough tempo well enough. But key signature, exact instrument identity, precise meter, phrase structure — those are essentially invisible to audio codecs. MIDI captures all of them exactly.
 
-MIDI encodes all of these exactly — note events, instrument tracks, key and tempo metadata. So we want to learn a compact representation of this MIDI information and inject it into the model.
-
-The real challenge is evaluation. If we just add a symbolic stream and see improvement, we can't tell whether the gain came from the symbolic *content* itself, or just from giving the model extra tokens to work with. Our entire evaluation is designed around that distinction.
+Now here's the thing. You could just throw symbolic tokens into the context and see if numbers go up. But that would prove nothing. Extra tokens alone could explain any gain — the model has more to work with. So the real challenge isn't building the system. It's designing an evaluation that can actually distinguish *content* from *capacity*. That distinction is what this entire project is organized around.
 
 ---
 
 ## Slide 3 — Three Research Questions
 
-This gives us three research questions. RQ1: does an aligned symbolic stream reduce acoustic token prediction loss, more than a shuffled or dummy stream of the same size? RQ2: does the gain come specifically from alignment, not just extra token budget? Aligned must beat *both* shuffled and dummy. RQ3: does the symbolic stream encode music-structural attributes we can independently verify through probing?
+So we gave ourselves three tests. And they're designed to be hard to pass.
 
-These RQs are the organizing principle. Experiments are evidence for these claims, not the claims themselves. Each comparison uses the aligned / shuffled / dummy protocol so gains can be attributed to symbolic content, not to capacity.
+RQ1: does an aligned symbolic stream actually reduce acoustic prediction error — *more than* a shuffled or dummy stream of the same size? Not just "does adding something help" — more than a corrupted version of itself.
+
+RQ2: is the gain specifically from alignment? Aligned has to beat both shuffled and dummy simultaneously. If it only beats one, we can't isolate the cause.
+
+RQ3: does the symbolic stream actually encode musical structure we can independently verify? Not just "the loss went down" — can we probe for it?
+
+These three questions are the skeleton of the paper. Every experiment is evidence for one of them.
 
 ---
 
 ## Slide 4 — Approach
 
-UniAudio 2.0 uses two sequential token streams: R_a — the reasoning stream — 8 codebooks, 151 frames, followed by C_a — the acoustic stream — 8 codebooks, 376 frames. We insert S_plan between them: 4 codebooks, 30 frames, giving 30 seconds of symbolic coverage at one frame per second.
+UniAudio 2.0 works by predicting two sequential token streams. First R_a — the reasoning stream, 8 codebooks, 151 frames. Then C_a — the acoustic stream, 8 codebooks, 376 frames. We insert S_plan right between them. Four codebooks, 30 frames — one frame per second of audio.
 
-S_plan is a 4-stage RVQ codec trained on MIDI-derived features: pitch-class distribution, instrument presence flags, meter, and note density per window.
+S_plan is trained as an RVQ codec on MIDI-derived features: pitch-class distribution, instrument presence, meter, note density. All compact, all fixed-length. The total sequence becomes 557 tokens — well within the 1,024 limit, zero truncation.
 
-The total sequence is 151 + 30 + 376 = 557 tokens. UniAudio's context limit is 1,024. We have zero truncation.
-
-Why not just append raw MIDI? Raw MIDI ranges from 2,000 to 8,000 tokens per window — it saturates the context immediately. And variable-length MIDI can't be uniformly shuffled or replaced with a dummy stream, which breaks our evaluation design. S_plan's fixed-length RVQ encoding is what makes the controlled comparison possible.
+Why not just feed raw MIDI? Raw MIDI is anywhere from 2,000 to 8,000 tokens per window. It blows the context immediately. And more importantly — you can't uniformly shuffle or dummy-replace a variable-length sequence. Our evaluation protocol *requires* fixed-length. S_plan's design is what makes the controlled comparison possible in the first place.
 
 ---
 
 ## Slide 5 — Evaluation Protocol
 
-Let me walk through the four conditions we use in every comparison.
+Here's the core of the evaluation design. Four conditions, used in every single comparison.
 
-**Aligned** S_plan: the model sees tokens from the *same* window's MIDI — correct symbolic information, correctly aligned in time.
-**Shuffled** S_plan: tokens from a *different* window's MIDI — token statistics intact, temporal alignment broken.
-**Dummy stream**: zero or random RVQ codes — isolates the pure capacity effect, no symbolic content at all.
-**Reason-only**: no S_plan slot — the plain base model.
+Aligned: the S_plan slot gets tokens from the *same* audio window's MIDI — temporally correct, content correct. Shuffled: tokens from a *different* window — same statistics, alignment broken. Dummy: zeros or random codes — pure capacity, no content. Reason-only: no S_plan slot at all.
 
-The claim rule is strict: aligned must beat *both* shuffled and dummy. Shuffled tells us if statistics alone explain the gain; dummy tells us if just having more tokens explains it. Only if aligned beats both can we attribute the gain to alignment-specific content.
+The claim rule is strict. Aligned has to beat *both* shuffled and dummy. Shuffled tells us whether token statistics alone explain the gain. Dummy tells us whether just having more tokens explains it. If aligned only beats one, or neither, there's no claim to make. That's the bar we set for ourselves.
 
 ---
 
 ## Slide 6 — Prerequisite: Codec Table
 
-Before any downstream result means anything, we need to verify the codec itself works faithfully. Binary feature accuracy is 0.998 — essentially perfect reconstruction. Continuous feature MSE is 0.00172. Books 2 through 4 reach 72 to 81% codebook utilization, so there's no codebook collapse.
+Before we can trust anything downstream, we need to know: does the codec actually work? Binary feature accuracy is 0.998 — essentially perfect. Continuous feature MSE is 0.00172. And look at codebook utilization: books 2 through 4 at 72 to 81%. No collapse.
 
-This is a prerequisite, not a claim. If the codec were noisy, differences in the downstream comparisons could come from codec artifacts rather than symbolic content. With these numbers, that concern is ruled out.
+This matters because if the codec were noisy, any downstream difference between aligned and shuffled could come from encoding artifacts, not from symbolic content. With these numbers, that concern is gone. We're not chasing noise.
 
 ---
 
 ## Slide 7 — Prerequisite: Feature Heatmap
 
-This heatmap makes it visual. Left side is ground-truth MIDI features — rows are feature dimensions, columns are 30 one-second frames. Right side is the S_plan reconstruction. Binary accuracy is 1.000 on this window. The two panels are visually indistinguishable.
+And here's what that looks like. Two heatmaps: ground truth on the left, S_plan reconstruction on the right. Rows are feature dimensions, columns are 30 time frames. Binary accuracy on this window: 1.000.
 
-One important boundary: this is symbolic feature reconstruction, not MIDI transcription or waveform generation. S_plan encodes and decodes the compact feature representation, not the original MIDI events.
+You can stare at them — I couldn't tell them apart either when we first plotted this. That's the point. The codec is not losing information.
+
+One thing to be clear about: this is symbolic feature reconstruction, not MIDI transcription or waveform synthesis. S_plan encodes the compact representation. That's the boundary.
 
 ---
 
 ## Slide 8 — RQ1: Proxy Task
 
-First evidence for RQ1 comes from a proxy prediction task. Here the S_plan codec is frozen, and we train a lightweight proxy head to predict acoustic tokens. Five thousand steps, 1,385 test windows.
+So does aligned S_plan actually help predict acoustic tokens? The first test is a proxy task — codec frozen, lightweight prediction head, five thousand steps.
 
-Aligned S_plan gets test CE 7.596. Shuffled gets 7.631. Dummy gets 7.694. The aligned beats both controls, and the gap of −0.034 versus shuffled shows that temporal alignment drives the gain — not just token statistics from *some* MIDI file.
+Aligned gets 7.596. Shuffled gets 7.631. Dummy gets 7.694. Aligned wins both. And the gap versus shuffled — 0.034 — tells you that temporal alignment is driving it. It's not just that MIDI statistics are useful. It has to be *this window's* MIDI.
 
-One caveat: this is the proxy setting. The codec is frozen and the head is lightweight — it's not the full end-to-end integration. We replicate that next.
+But I want to be honest: this is a lightweight setup. Frozen codec, minimal integration. Is the effect real when we go end-to-end? That's the next question.
 
 ---
 
 ## Slide 9 — RQ1: Stream-Native Replication
 
-To confirm the proxy result isn't an artifact of the frozen codec setup, we replicate with the full stream-native interface — the actual R_a → S_plan → C_a layout with matched positional encoding.
+So we ran it again. Full integration this time — the actual R_a → S_plan → C_a layout, matched positional encoding, nothing frozen.
 
-Aligned S_plan: test CE 5.766. Shuffled: 5.785. Dummy: 5.785. Consistent deltas of −0.018 and −0.019.
+Aligned: 5.766. Shuffled: 5.785. Dummy: 5.785. Gap of −0.018 and −0.019.
 
-RQ1 holds with end-to-end integration. The gain replicates when S_plan is inserted as a native third stream, not just an external side-channel. And the 557-token sequence fits with zero truncation.
+The result holds. And that matters. Because "proxy task with frozen codec" and "full end-to-end integration" are two completely different setups. Same direction in both. That's replication, not coincidence.
 
 ---
 
 ## Slide 10 — RQ1: Primary Result
 
-Our primary and most rigorous test is the hardened four-condition comparison. All four conditions use identical hyperparameters and the same fixed random seed. The only variable is which stream variant fills the S_plan slot.
+Third test. This is the hardened one. All four conditions, identical hyperparameters, same random seed. The only thing that changes is what goes into the S_plan slot.
 
-Reason-only baseline: test CE 5.859. Aligned S_plan: 5.600. Shuffled: 5.614. Dummy: 5.614.
+Reason-only is at 5.859. Now add any symbolic stream at all — shuffled, dummy — and you drop to around 5.614. That 0.245 improvement is the capacity effect. The model simply benefits from having more tokens. Expected, and welcome.
 
-Let me unpack these numbers. The large drop from reason-only to *any* symbolic stream — 5.859 down to roughly 5.614 — that's the capacity effect: the model benefits from having any extra 30 tokens, regardless of their content. But aligned goes further, to 5.600, beating both controls by an additional 0.014. That 0.014 is the alignment-specific signal we're claiming.
+But aligned goes to 5.600. Another 0.014 below both controls. That's the number we're claiming — the alignment-specific signal, on top of the capacity gain.
 
-The gate value confirms the same story: the model opens the S_plan slot *more* for aligned content — 0.177 — than for shuffled — 0.167 — or dummy — 0.163. The model is not indifferent to what's in that slot.
-
-Boundary: oracle MIDI input; metric is semantic token CE, not decoded audio.
+And look at the gate values. The model opens the S_plan slot more when the content is aligned — 0.177 — than when it's shuffled — 0.167 — or dummy — 0.163. The model is not treating these three identically. It knows the difference.
 
 ---
 
 ## Slide 11 — RQ2: Alignment Decomposition
 
-RQ2 asks whether the gain is specifically due to alignment. We decompose it: the stream capacity effect — any symbolic stream versus reason-only — is −0.245. The alignment-specific effect on top of that — aligned versus both controls — is −0.014. Together: −0.259 total.
+Now — is that 0.014 actually meaningful, or noise from one run?
 
-The key evidence for RQ2 is the second table: the alignment-specific gap is consistent in sign across all three independent comparisons — −0.034 in the proxy task, −0.018 in the stream-native warmup, −0.014 in the hardened comparison. Three runs, same direction, decreasing magnitude as the training becomes more constrained. This rules out a single-run artifact.
+The top table decomposes the effect. The capacity gain — any symbolic stream versus reason-only — is 0.245. The alignment-specific gain on top — aligned versus both controls — is 0.014. Small. But look at the second table.
 
-The gate corroborates: 0.177 for aligned, 0.167 for shuffled, 0.163 for dummy. RQ2 is answered positively.
+Three independent comparisons: −0.034 in the proxy task, −0.018 in the stream-native warmup, −0.014 in the hardened test. Three setups, same direction, every time. The magnitude decreases as the training becomes more constrained — which makes sense — but the sign never flips.
+
+That consistency is the argument. One result could be noise. Three results in the same direction, across different architectures and training regimes, is a pattern. RQ2 is positive.
 
 ---
 
 ## Slide 12 — RQ3: MIR Probing
 
-For RQ3 we run supervised probing on frozen S_plan embeddings. The table has two columns: S_plan accuracy and the zero-feature control. The zero-feature control is a probe trained on an all-zeros input — it tells you what accuracy you get purely from the label distribution, with no learned features at all.
+For RQ3 we ask a different question: what's actually *inside* those S_plan tokens?
 
-Weak key accuracy: 0.557 versus 0.126. That's a gap of 0.431 — the model is clearly encoding key information. Pitch-class macro-F1: 0.854 versus 0.830. Instrument macro-F1: 0.501 versus 0.426.
+We froze the embeddings and trained supervised probes to recover musical attributes. But here's the critical thing: we didn't just compare against a naive baseline. We used a zero-feature control — a probe trained on literally nothing, just the label distribution. That tells you what accuracy you get from prior alone, with zero learned representation. That's the bar.
 
-Now the red rows at the bottom. Instrument micro-F1 is actually *lower* for S_plan than for the zero-feature control: 0.791 versus 0.835. Same for meter accuracy: 0.783 versus 0.855. These are not failures of S_plan — they're cases where the label prior alone achieves high accuracy because common instruments and common meters dominate the dataset. High accuracy alone is not evidence. The zero-feature baseline is mandatory.
+Weak key accuracy: S_plan gets 0.557, zero-feature gets 0.126. Gap of 0.431. That's real signal. Pitch-class macro-F1: 0.854 versus 0.830. Some signal. Instrument macro-F1: 0.501 versus 0.426.
+
+Now look at the red rows. Instrument micro-F1 is *lower* for S_plan than for the zero-feature control. Meter accuracy too. These aren't S_plan failures — they're cases where common instruments and common meter signatures dominate the dataset so completely that a probe with zero features can exploit the prior. High accuracy is not evidence. The zero-feature comparison is mandatory.
 
 ---
 
 ## Slide 13 — RQ3: Axis Safety
 
-This slide formalizes which axes we can actually claim.
+So what can we actually claim? We drew a hard line.
 
-Weak key, with a gap of +0.431, is our strongest result. Safe to claim — pending a label-shuffle control which we haven't completed yet.
+Above the line: weak key with a gap of 0.431 — our strongest result, safe to claim. Pitch-class at 0.024 — positive but we need one more control. Instrument macro-F1 at 0.075 — some signal, pending class-imbalance analysis.
 
-Pitch-class at +0.024 is positive but small. We need a target-prior control before claiming it firmly.
+Below the line: instrument micro-F1 and meter accuracy — excluded. No amount of qualification makes a negative gap claimable.
 
-Instrument macro-F1 at +0.075 shows some signal but requires class-imbalance analysis.
-
-The bottom two — instrument micro-F1 and meter accuracy — are excluded. The common-class and common-meter priors dominate in both cases; any claim there would be misleading.
+And we say explicitly on this slide that two controls are still pending. We're not presenting these as complete probing results — we're presenting what we can defensibly say now.
 
 ---
 
 ## Slide 14 — RQ3: Qualitative Figure
 
-For intuition, here's the piano roll comparison. Left is ground-truth MIDI, right is the pitch-region reconstruction from the S_plan codec, for window 3 of this track — 90 to 120 seconds. Binary accuracy is 1.000, MSE 0.0013.
+One more thing about what S_plan actually captures. Left is the ground-truth MIDI piano roll. Right is the pitch-region reconstruction from the S_plan codec. Ninety to 120 seconds of a Slakh track. Binary accuracy: 1.000.
 
-The reconstruction is essentially exact. Again, the boundary: this is symbolic feature reconstruction, not MIDI transcription, and not waveform generation.
+The two images are essentially identical. The symbolic content is preserved at this resolution.
+
+Again — boundary: this is feature reconstruction. S_plan is not transcribing MIDI from audio, and it's not generating waveforms. It's encoding and recovering the compact representation.
 
 ---
 
 ## Slide 15 — Design Constraint
 
-Before we arrived at the working S_plan interface, we tried two things that failed, and the failures are instructive.
+Now — we didn't arrive at this design on the first try. We failed twice, and I want to tell you about those failures because they're actually what makes the positive results meaningful.
 
-First, side-channel insertion — we appended S_plan tokens outside the native streaming position. The result: all three conditions — aligned, shuffled, dummy — were *worse* than reason-only, and indistinguishable from each other. The model ignored the symbolic stream entirely.
+First attempt: we appended S_plan tokens as a side-channel — outside the native streaming position. Look at the table. Every condition got *worse* than reason-only. Aligned, shuffled, dummy — all roughly the same, all degraded. The model learned to ignore that slot entirely. Inserting tokens somewhere they don't belong, with mismatched positional encoding, just adds noise.
 
-Second, adapter gating — a cross-attention adapter to fuse the symbolic signal. The gate converged to 3.4 × 10⁻⁴. Training was stable, but the model never actually used the adapter.
+Second attempt: a cross-attention adapter. The idea was to graft in symbolic information via attention. The gate converged to 0.00034. Training was stable — but the fusion never happened. The adapter was technically active and practically useless.
 
-Same root cause in both failures: symbolic tokens must enter through the same stream-native positional encoding as R_a and C_a. This is why the RQ1 and RQ2 positive results are non-trivial. Getting a positive result required finding the right interface first.
+Same root cause both times: symbolic tokens have to enter through the *same positional encoding structure* as R_a and C_a. That's what "stream-native" means. Without that, the model has no way to integrate the information. This is why RQ1 and RQ2 are non-trivial — not because the final numbers are large, but because getting any positive signal required getting the interface exactly right first.
 
 ---
 
 ## Slide 16 — Limitations
 
-Being explicit about what we cannot claim. Five gaps.
+Let me be explicit about what we cannot claim.
 
-No decoded generation: everything is on semantic token CE. We haven't decoded waveforms from the aligned versus shuffled checkpoints yet. That is the next priority — converting a token-level claim into perceptual audio evidence.
+The most important gap: we have never decoded audio. Every result you saw today is on semantic token cross-entropy. We don't know if aligned sounds better than shuffled. That's the next experiment — decode C_a from both checkpoints, run a perceptual comparison.
 
-Oracle MIDI: at inference on real audio, you don't have the aligned MIDI. We need an audio-to-S_plan predictor to make this usable.
+We also rely on oracle MIDI. At test time on real recordings, the aligned MIDI doesn't exist. We need an audio-to-S_plan predictor to close that loop, and we don't have one.
 
-No LLM-supervised tokenizer: text-language grounding — captioning, open QA — is not yet trained.
+All of this is on Slakh — synthetic, MIDI-rendered music. Real recordings are a different world. We have no evidence of transfer.
 
-Pending MIR controls: the label-shuffle and target-prior controls for probing are incomplete.
-
-Slakh only: no real-recording evidence and no cross-domain transfer.
+And on the probing side, two controls are still pending. The claims there are provisional until we run them.
 
 ---
 
 ## Slide 17 — Conclusion
 
-To conclude.
+Three questions, three answers.
 
-**RQ1 — acoustic utility — positive.** Aligned S_plan reduces cross-entropy from 5.859 to 5.600; the direction holds across all three comparisons.
+RQ1: yes, aligned S_plan reduces acoustic token CE relative to both corrupted controls. 5.600 versus 5.859. Consistent direction across all three comparison setups.
 
-**RQ2 — alignment specificity — positive.** Aligned beats shuffled and dummy consistently, delta in the range of −0.014 to −0.034. Gate values corroborate.
+RQ2: yes, the gain is specifically from alignment, not token budget. The gap is small — 0.014 — but it holds across three independent runs. And the gate values confirm the model is treating aligned tokens differently.
 
-**RQ3 — structural content — qualified positive.** Weak key and pitch-class confirmed above the zero-feature baseline. Meter and instrument micro-F1 excluded as prior-dominated.
+RQ3: qualified yes. Weak key and pitch-class are above the zero-feature baseline. Meter and micro-F1 are excluded.
 
-The design constraint result — two interface failures before finding the working approach — is what makes RQ1 and RQ2 non-trivial. And the multi-condition protocol we developed — aligned, shuffled, dummy, plus zero-feature probing — is a methodological contribution applicable beyond S_plan specifically.
+But what I think the actual contribution here is — beyond the individual numbers — is the evaluation framework. Aligned versus shuffled versus dummy, combined with zero-feature probing, is a protocol for asking precise questions about symbolic injection. That design is what forced us toward a non-trivial positive result, and it's reusable for anything you'd want to inject into a language model, not just S_plan.
 
-Thank you. Happy to take questions.
+Thank you.
 
 ---
 
