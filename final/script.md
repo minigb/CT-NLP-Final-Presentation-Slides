@@ -8,15 +8,13 @@
 
 Good afternoon, everyone. This is joint work from Dabin Kim, Minhee Lee, Ji Jiaxian, and Aner Zheng at KAIST.
 
-The paper asks three questions about symbolic music representations in audio language models. Does a compact learned symbolic stream, aligned to an audio window's own MIDI, reduce acoustic token prediction uncertainty more than a shuffled or dummy stream of the same size? Is that benefit specific to content alignment, or merely to token capacity? And does the symbolic stream encode music-structural attributes recoverable by probing? This talk reports our answers to each.
-
 ---
 
 ## Slide 2 — Problem
 
 Unified audio language models predict discrete audio tokens autoregressively and have achieved strong performance across diverse tasks. Music, however, poses a persistent gap. The structural properties most salient to musicians and listeners — harmonic progressions, rhythmic regularity, instrument co-occurrence, phrase boundaries — are encoded in MIDI symbolic representations, not waveform statistics.
 
-The challenge is not just building a symbolic bridge. It is testing whether symbolic structure changes what the model predicts, rather than simply giving the model more context. That motivates the three research questions on the next slide.
+The challenge is not just building a symbolic bridge. It is testing whether symbolic structure can be injected into a LALM in a controlled, verifiable way, and whether it changes what the model predicts rather than simply giving the model more context. That motivates the three research questions on the next slide.
 
 ---
 
