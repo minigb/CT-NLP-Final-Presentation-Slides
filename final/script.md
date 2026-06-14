@@ -78,7 +78,7 @@ Every controlled comparison uses the same four conditions under matched hyperpar
 
 The first evidence for RQ1 comes from a proxy prediction task. A small transformer head is trained to predict C_a tokens from frozen R_a plus symbolic representations, over 5,000 steps on 1,385 held-out test windows.
 
-Aligned S_plan achieves the lowest test cross-entropy in this table. The important comparison is that aligned beats both corrupted controls, and also beats the hand-crafted rule summary. This is the first evidence that S_plan carries acoustically useful information beyond what R_a alone encodes.
+Aligned S_plan achieves the lowest test cross-entropy in this table. The important comparison is that aligned beats both corrupted controls, and also beats the hand-crafted rule summary. Because the corrupted controls preserve the symbolic slot while removing the correct temporal content, this is the first evidence that S_plan carries acoustically useful information beyond what R_a alone encodes.
 
 At this point, this is still a proxy setup with a frozen codec. The full end-to-end integration is tested separately.
 
@@ -90,7 +90,7 @@ The full three-stream layout — R_a → S_plan → C_a — is then evaluated wi
 
 Aligned again gives the lowest test CE, with a small but consistent edge over both shuffled and dummy. On the fixed validation windows, some cases are clearly positive and some are near-zero or slightly negative, which is what we would expect from a real but still small signal under a short warmup budget.
 
-The positive gap replicates in a setup that is architecturally distinct from the proxy task. The effect is not confined to the proxy setup.
+The positive gap replicates in a setup that is architecturally distinct from the proxy task. The effect is not confined to the proxy setup. It also fits within the model context without truncation, which matters because the goal is not just to add symbolic information, but to add it in a usable stream-native form.
 
 ---
 
@@ -100,7 +100,7 @@ The primary evaluation runs all four conditions under fully identical hyperparam
 
 The result decomposes into two layers. First, any symbolic stream helps over reason-only; that is the stream-capacity effect. Second, aligned S_plan is still lower than both shuffled and dummy; that smaller residual gap is the alignment-specific effect.
 
-The learned gate corroborates through an independent channel: the model opens the S_plan slot more for aligned content than for shuffled or dummy. These results answer RQ1 positively across three independent controlled comparisons at different training scales.
+The learned gate corroborates through an independent channel: the model opens the S_plan slot more for aligned content than for shuffled or dummy. These results answer RQ1 positively across three independent controlled comparisons at different training scales. This is still under oracle MIDI input and semantic-token cross-entropy, so waveform-level evidence remains a next step.
 
 ---
 
@@ -112,7 +112,7 @@ The decomposition in the upper table is clear. The dominant effect is stream cap
 
 The critical evidence is in the lower table. Across three independent comparisons, aligned is consistently better than shuffled. The magnitude changes with setup and training budget, but the direction is stable. A finding consistent in direction across independent setups is substantially more robust than a single-run result.
 
-The gate provides independent corroboration. RQ2 is answered positively: the alignment-specific effect is not explainable by token capacity alone.
+The gate provides independent corroboration: aligned content receives the strongest gate value, followed by shuffled, then dummy. RQ2 is answered positively: the alignment-specific effect is not explainable by token capacity alone.
 
 ---
 
@@ -190,7 +190,7 @@ Thank you.
 
 ## Appendix Slide 20 — Symbolic Codec Reconstruction
 
-Before any downstream result can be trusted, the RVQ codec must faithfully reconstruct input symbolic features. The table shows high binary accuracy, low continuous error, and healthy codebook use without collapse. The fixed validation windows also reconstruct cleanly.
+Before any downstream result can be trusted, the RVQ codec must faithfully reconstruct input symbolic features. The table shows high binary accuracy, low continuous error, and healthy codebook use without collapse. In particular, the later codebooks show substantial utilization, so the result is not explained by codebook collapse. The fixed validation windows also reconstruct cleanly.
 
 This validates the codec before downstream comparison. It means later differences are not easily explained by reconstruction failure.
 
