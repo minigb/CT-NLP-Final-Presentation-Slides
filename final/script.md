@@ -60,15 +60,21 @@ From each 30-second window, MIDI features are extracted at 100 ms resolution fro
 
 ## Slide 7 — Codec Architecture
 
-The symbolic RVQ codec compresses the 53-dimensional, 300-frame input into a fixed 30-frame representation. A two-layer 1D CNN encoder with temporal pooling handles the variable-to-fixed compression. The residual vector quantizer applies four stages, each with 512 codes, trained with exponential moving average updates and codebook restart. A symmetric CNN decoder reconstructs the original 53-dimensional feature sequence. Training uses binary cross-entropy for the binary dimensions and MSE for continuous dimensions, run for 42,000 steps. The resulting 4-by-30 token stream uses the same multi-stream RVQ format as C_a — which is precisely what enables the stream-native positional encoding.
+UniAudio predicts acoustic semantic tokens after the reasoning/audio-representation stream. So we insert S_plan in between: R_a gives the model the audio context, S_plan gives a compact symbolic plan aligned to that same window, and then the model predicts C_a with both sources available.
+
+<!-- This position matters because S_plan is not meant to be a separate side note or an appended MIDI string. It has to live inside the same autoregressive stream and positional convention as the audio tokens. If the symbolic information is injected as an irregular side channel, the model may not fuse it with the acoustic stream, and the comparison becomes harder to interpret.
+
+That is why we compress MIDI-derived features into a fixed-length discrete stream. The fixed stream makes aligned, shuffled, and dummy variants comparable, while the insertion point makes the symbolic information available exactly before acoustic-token prediction. In other words, the codec is designed less as a standalone reconstruction model and more as a controlled interface for asking whether aligned musical structure helps the language model. -->
 
 ---
 
 ## Slide 8 — Training Setup
 
-All symbolic stream variants are trained via LoRA adapters on 140 attention modules of the frozen UniAudio 2.0 transformer. The reason-only configuration has approximately 10.8 million trainable parameters; adding the symbolic stream brings this to approximately 253 million. A learned scalar gate controls the magnitude of symbolic stream influence on the C_a prediction path.
+All symbolic stream variants are trained via LoRA adapters of the frozen UniAudio 2.0 transformer. 
 
-The hardened four-condition comparison — the primary result — uses 800 steps, batch size 1 with gradient accumulation 16, LoRA learning rate 10⁻⁵, symbolic stream learning rate 3×10⁻⁴, and gate learning rate 2×10⁻³. The random seed is fixed, and all four conditions are trained identically except for the stream variant.
+<!-- The reason-only configuration has approximately 10.8 million trainable parameters; adding the symbolic stream brings this to approximately 253 million. A learned scalar gate controls the magnitude of symbolic stream influence on the C_a prediction path.
+
+The hardened four-condition comparison — the primary result — uses 800 steps, batch size 1 with gradient accumulation 16, LoRA learning rate 10⁻⁵, symbolic stream learning rate 3×10⁻⁴, and gate learning rate 2×10⁻³. The random seed is fixed, and all four conditions are trained identically except for the stream variant. -->
 
 ---
 
@@ -76,59 +82,95 @@ The hardened four-condition comparison — the primary result — uses 800 steps
 
 Every controlled comparison uses the same four conditions under matched hyperparameters: aligned S_plan, shuffled S_plan, dummy stream, and reason-only.
 
+Aligned S_plan uses the correct MIDI-derived symbolic tokens for the audio window.
+
+Shuffled S_plan keeps realistic symbolic tokens but takes them from another window, so it tests whether temporal/audio alignment matters.
+
+Dummy keeps the slot and token budget but removes meaningful musical content.
+
+Reason-only removes the symbolic slot entirely.
+
+<!-- So the result should be read as a controlled comparison. If aligned beats reason-only, symbolic input is useful. If aligned also beats dummy, the gain is not just from extra capacity. If aligned beats shuffled, the gain depends on the symbolic content being matched to the audio. This is why the important pattern is aligned being best across the controls, not just one absolute CE number. -->
+
 ---
 
 ## Slide 10 — RQ1: Music-Aware Understanding / Proxy Task
 
-The first evidence for RQ1 comes from a proxy prediction task. A small transformer head is trained to predict C_a tokens from frozen R_a plus symbolic representations, over 5,000 steps on 1,385 held-out test windows.
+<!-- The first evidence for RQ1 comes from a proxy prediction task. A small transformer head is trained to predict C_a tokens from frozen R_a plus symbolic representations, over 5,000 steps on 1,385 held-out test windows. -->
 
-Aligned S_plan achieves the lowest test cross-entropy in this table. This is not a direct understanding metric; it is an initial performance signal. Under the corrupted controls, lower CE suggests the model benefits from aligned symbolic musical content, rather than from the extra token slot alone. The important comparison is that aligned beats both corrupted controls, and also beats the hand-crafted rule summary.
+Aligned S_plan achieves the lowest test cross-entropy compared to other settings.
 
-At this point, this is still a proxy setup with a frozen codec. The full end-to-end integration is tested separately.
+Even though this is not a direct understanding metric; we used this metric to show it as an initial performance signal.
+
+<!-- Under the corrupted controls, lower CE suggests the model benefits from aligned symbolic musical content, rather than from the extra token slot alone. The important comparison is that aligned beats both corrupted controls, and also beats the hand-crafted rule summary.
+
+At this point, this is still a proxy setup with a frozen codec. The full end-to-end integration is tested separately. -->
 
 ---
 
 ## Slide 11 — RQ1: Music-Aware Understanding / Stream-Native
 
-The full three-stream layout — R_a → S_plan → C_a — is then evaluated with streams aligned to the base model's positional encoding, under a shorter warmup budget of 3,000 steps.
+The full three-stream layout — R_a → S_plan → C_a — is then evaluated with streams aligned to the base model's positional encoding.
+<!-- under a shorter warmup budget of 3,000 steps. -->
 
-Aligned again gives the lowest test CE, with a small but consistent edge over both shuffled and dummy. This keeps the metric statement concrete: the CE improves. The broader interpretation is that aligned symbolic structure is helping the model in a direction consistent with better music-aware understanding. On the fixed validation windows, some cases are clearly positive and some are near-zero or slightly negative, which is what we would expect from a real but still small signal under a short warmup budget.
+Aligned again gives the lowest test CE, with a small but consistent edge over both shuffled and dummy.
+<!-- This keeps the metric statement concrete: the CE improves. -->
+The broader interpretation is that aligned symbolic structure is helping the model in a direction consistent with better music-aware understanding.
+<!-- On the fixed validation windows, some cases are clearly positive and some are near-zero or slightly negative, which is what we would expect from a real but still small signal under a short warmup budget. -->
 
-The positive gap replicates in a setup that is architecturally distinct from the proxy task. The effect is not confined to the proxy setup. It also fits within the model context without truncation, which matters because the goal is not just to add symbolic information, but to add it in a usable stream-native form.
+<!-- The positive gap replicates in a setup that is architecturally distinct from the proxy task. The effect is not confined to the proxy setup. It also fits within the model context without truncation, which matters because the goal is not just to add symbolic information, but to add it in a usable stream-native form. -->
 
 ---
 
 ## Slide 12 — RQ1: Music-Aware Understanding / Primary Result
 
-The primary evaluation runs all four conditions under fully identical hyperparameters, differing only in the symbolic stream variant.
+This is the primary matched comparison.
+
+Aligned S_plan gives the lowest CE and best accuracy, and the gate is also highest for aligned content.
+
+The key takeaway is that RQ1 has positive initial evidence: aligned symbolic structure improves acoustic-token prediction under matched controls.
+
+<!-- The primary evaluation runs all four conditions under fully identical hyperparameters, differing only in the symbolic stream variant.
 
 The result decomposes into two layers. First, any symbolic stream helps over reason-only; that is the stream-capacity effect. Second, aligned S_plan is still lower than both shuffled and dummy; that smaller residual gap is the alignment-specific effect.
 
-The learned gate corroborates through an independent channel: the model opens the S_plan slot more for aligned content than for shuffled or dummy. These results give positive initial evidence for RQ1 across three independent controlled comparisons at different training scales. The achievement language is music-aware understanding; the metric evidence is lower CE, with broader understanding tests and waveform-level evidence left as next steps.
+The learned gate corroborates through an independent channel: the model opens the S_plan slot more for aligned content than for shuffled or dummy. These results give positive initial evidence for RQ1 across three independent controlled comparisons at different training scales. The achievement language is music-aware understanding; the metric evidence is lower CE, with broader understanding tests and waveform-level evidence left as next steps. -->
 
 ---
 
 ## Slide 13 — RQ2: Alignment-Specific Understanding
 
-RQ2 uses stronger goal language — alignment-specific understanding — but the evidence is still metric-based. We need to show that the CE gain is not explained by token capacity alone.
+This slide separates the capacity effect from the alignment-specific effect.
+
+Most of the gain comes from adding the symbolic stream, but aligned S_plan still consistently beats the corrupted controls.
+
+The key takeaway is that RQ2 has positive initial evidence: correct symbolic-audio alignment matters, not just extra tokens.
+
+<!-- RQ2 uses stronger goal language — alignment-specific understanding — but the evidence is still metric-based. We need to show that the CE gain is not explained by token capacity alone.
 
 The decomposition in the upper table is clear. The dominant effect is stream capacity: simply adding a symbolic stream already helps over reason-only. The alignment-specific effect is smaller, but it is the part that remains when aligned is compared against shuffled and dummy.
 
 The critical evidence is in the lower table. Across three independent comparisons, aligned is consistently better than shuffled. The magnitude changes with setup and training budget, but the direction is stable. A finding consistent in direction across independent setups is substantially more robust than a single-run result.
 
-The gate provides independent corroboration: aligned content receives the strongest gate value, followed by shuffled, then dummy. So the achievement is alignment-specific understanding, and the metric evidence is a small but consistent CE advantage plus the gate ordering.
+The gate provides independent corroboration: aligned content receives the strongest gate value, followed by shuffled, then dummy. So the achievement is alignment-specific understanding, and the metric evidence is a small but consistent CE advantage plus the gate ordering. -->
 
 ---
 
 ## Slide 14 — RQ3: Music-Structural Understanding / MIR Probing
 
-For RQ3, the high-level question is music-structural understanding. The metric evidence is MIR probing. Linear probing heads are trained on frozen S_plan embeddings to recover music-structural attributes. The evaluation compares against a zero-feature baseline — inputs zeroed, with only the head bias and BatchNorm statistics available — which exposes dataset priors. The reliable axes should exceed this bar.
+Here we ask whether S_plan carries recoverable musical structure, using MIR probing against a zero-feature baseline.
+
+The key takeaway is qualified positive: key is the strongest signal, and pitch-class is also positive.
+
+Meter and instrument micro-F1 should not be claimed here because their baselines are stronger.
+
+<!-- For RQ3, the high-level question is music-structural understanding. The metric evidence is MIR probing. Linear probing heads are trained on frozen S_plan embeddings to recover music-structural attributes. The evaluation compares against a zero-feature baseline — inputs zeroed, with only the head bias and BatchNorm statistics available — which exposes dataset priors. The reliable axes should exceed this bar.
 
 Weak key has the clearest gap over the zero-feature baseline, so it is the strongest feature-specific signal. Pitch-class also shows a positive gap. Instrument macro-F1 is positive too, but it still needs class-imbalance controls before we treat it as a strong result.
 
 The excluded axes require a different reading. For instrument micro-F1 and meter accuracy, the zero-feature baseline is actually higher than S_plan. These are not failures of S_plan. They are attributes dominated by common-class and common-meter priors in the Slakh corpus. High absolute accuracy is not evidence; the comparison against the baseline is the meaningful diagnostic.
 
-RQ3 receives a qualified positive answer: the probing metrics support key and pitch-class structure well above the prior baseline. Meter and instrument micro-F1 are excluded until additional controls are complete.
+RQ3 receives a qualified positive answer: the probing metrics support key and pitch-class structure well above the prior baseline. Meter and instrument micro-F1 are excluded until additional controls are complete. -->
 
 ---
 
@@ -148,7 +190,13 @@ As a qualitative illustration, this slide shows a piano roll comparison. Ground-
 
 ## Slide 17 — Current Scope and Next Steps
 
-Five limitations must be stated precisely.
+<!-- The key takeaway is scope: our evidence is controlled and token-level, not yet decoded-audio evidence. -->
+
+There are five limitations here. First, we have not decoded generated waveforms yet, so the result is still CE-based. Second, S_plan currently uses oracle MIDI, so inference-time symbolic prediction is future work. Third, the tokenizer is not trained with LLM supervision, so text-level music grounding is outside this result. Fourth, MIR controls are still in progress, especially for prior-dominated axes. Fifth, the experiments are Slakh-only, so real-recording transfer is not claimed.
+
+The immediate next step is to decode waveform outputs from the aligned checkpoint and compare them against shuffled controls.
+
+<!-- Five limitations must be stated precisely.
 
 First, no decoded generation evidence. All experiments evaluate cross-entropy on C_a token prediction under oracle symbolic input. There is no waveform-level evidence yet that S_plan conditioning changes the perceptual quality or structural fidelity of decoded audio.
 
@@ -158,13 +206,19 @@ Third, no LLM-supervised tokenizer. S_plan is trained via reconstruction and MIR
 
 Fourth, MIR controls in progress. Label-shuffle and target-prior controls will strengthen the probing analysis. Instrument macro-F1 and several other axes need those controls before being used as headline symbolic evidence.
 
-Fifth, Slakh-only scope. All experiments use a synthesized paired audio-MIDI corpus. Generalization to real-world recordings is outside the current scope.
+Fifth, Slakh-only scope. All experiments use a synthesized paired audio-MIDI corpus. Generalization to real-world recordings is outside the current scope. -->
 
 ---
 
 ## Slide 18 — Conclusion
 
-The central result is focused but supported. S_plan is a compact symbolic codec that gives initial controlled evidence for music-aware understanding, alignment-specific use of symbolic content, and recoverable music-structural understanding under Slakh experiments.
+The conclusion is simple: S_plan gives positive initial evidence for music-aware and alignment-specific understanding.
+
+For music-structural understanding, the answer is qualified positive: key and pitch-class are supported, while some axes remain prior-dominated.
+
+The broader contribution is the controlled evaluation framework: matched corrupted controls and zero-feature MIR baselines make the symbolic-fusion evidence interpretable.
+
+<!-- The central result is focused but supported. S_plan is a compact symbolic codec that gives initial controlled evidence for music-aware understanding, alignment-specific use of symbolic content, and recoverable music-structural understanding under Slakh experiments.
 
 For RQ1: aligned S_plan gives CE gains in three independent controlled comparisons at different training scales. The clearest evidence comes from the matched four-condition evaluation. This is initial evidence toward music-aware understanding, not a standalone understanding benchmark.
 
@@ -172,7 +226,7 @@ For RQ2: aligned consistently beats both shuffled and dummy controls in CE. The 
 
 For RQ3: MIR probing shows the clearest feature-specific gain for weak key, with a smaller positive signal for pitch-class. That is the metric evidence for music-structural understanding. Meter and instrument micro-F1 are excluded as prior-dominated.
 
-The contribution is methodological as much as empirical. Matched corrupted controls, zero-feature MIR baselines, and a clear separation between capacity effects and alignment-specific content make the symbolic-fusion evidence interpretable. This evaluation framework applies broadly to future work on symbolic grounding in audio language models.
+The contribution is methodological as much as empirical. Matched corrupted controls, zero-feature MIR baselines, and a clear separation between capacity effects and alignment-specific content make the symbolic-fusion evidence interpretable. This evaluation framework applies broadly to future work on symbolic grounding in audio language models. -->
 
 Thank you.
 
