@@ -72,7 +72,7 @@ Every controlled comparison in this work uses four conditions under matched hype
 
 Aligned S_plan provides tokens from the audio window's own MIDI file, preserving temporal and content alignment. Shuffled S_plan provides tokens from a randomly selected different window, preserving token statistics but breaking content alignment. The dummy stream provides zero or uniformly random RVQ codes — a token-budget control with no symbolic content. Reason-only is the base model with no S_plan slot.
 
-The claim rule is strict. A gain of aligned over *both* shuffled and dummy is required to attribute any improvement to alignment-specific content. If aligned beats only one control, the attribution is confounded.
+The evaluation criterion is strict. We treat the effect as alignment-specific only when aligned beats *both* shuffled and dummy. If aligned beats only one control, token statistics or extra capacity could still explain the gain.
 
 ---
 
@@ -80,13 +80,13 @@ The claim rule is strict. A gain of aligned over *both* shuffled and dummy is re
 
 Before any downstream result can be trusted, the RVQ codec must faithfully reconstruct input symbolic features. Binary feature accuracy reaches 0.99777. Continuous feature MSE is 0.00172. Codebook utilization on books two through four is 72 to 81 percent, with no collapse — book one is underutilized at 31 percent, which is a known characteristic of early RVQ stages. Per-window binary accuracy on all three fixed validation examples is 1.000.
 
-This is a prerequisite, not a claim. It establishes that differences in downstream experiments are attributable to symbolic content, not codec failure.
+This validates the codec before downstream comparison. It means later differences are not easily explained by reconstruction failure.
 
 ---
 
 ## Slide 11 — Prerequisite: Feature Heatmap
 
-The heatmap shows a representative reconstruction. Ground-truth MIDI features are on the left; the S_plan reconstruction is on the right, for a 30-second window of Slakh track 01501. Binary accuracy is 1.000. The codec produces a technically healthy symbolic bottleneck. One boundary: this is symbolic feature reconstruction, not MIDI transcription and not waveform generation.
+The heatmap shows a representative reconstruction. Ground-truth MIDI features are on the left; the S_plan reconstruction is on the right, for a 30-second window of Slakh track 01501. Binary accuracy is 1.000. The codec produces a technically healthy symbolic bottleneck. This figure is about symbolic feature reconstruction; it is not MIDI transcription or waveform generation.
 
 ---
 
@@ -96,7 +96,7 @@ The first evidence for RQ1 comes from a proxy prediction task. A small transform
 
 Aligned S_plan achieves the lowest test cross-entropy of 7.5963, outperforming reason-only by 0.061, low-rate rule summaries by 0.048, shuffled by 0.034, and dummy by 0.098. The learned codec outperforms the hand-crafted rule summary, confirming the value of end-to-end symbolic compression. This is the first evidence that S_plan carries acoustically useful information beyond what R_a alone encodes.
 
-The claim boundary is noted: this is a proxy setup with a frozen codec. The full end-to-end integration is tested separately.
+At this point, this is still a proxy setup with a frozen codec. The full end-to-end integration is tested separately.
 
 ---
 
@@ -106,7 +106,7 @@ The full three-stream layout — R_a → S_plan → C_a — is then evaluated wi
 
 Aligned achieves test CE 5.766 versus shuffled at 5.785, a delta of −0.018, and dummy at 5.785, a delta of −0.019. On the four validation fixed windows, two show strong positive margins and two show near-zero or slightly negative margins — characteristic of a real but small signal that has not saturated the training budget. The margin is modest but consistent in sign.
 
-The positive gap replicates in a setup that is architecturally distinct from the proxy task. This rules out a proxy-specific artifact.
+The positive gap replicates in a setup that is architecturally distinct from the proxy task. The effect is not confined to the proxy setup.
 
 ---
 
@@ -134,21 +134,21 @@ The gate provides independent corroboration. RQ2 is answered positively: the ali
 
 ## Slide 16 — RQ3: MIR Probing
 
-For RQ3, linear probing heads are trained on frozen S_plan embeddings to recover music-structural attributes. The evaluation compares against a zero-feature baseline — inputs zeroed, with only the head bias and BatchNorm statistics available — which exposes dataset priors. Any claimed axis must exceed this bar.
+For RQ3, linear probing heads are trained on frozen S_plan embeddings to recover music-structural attributes. The evaluation compares against a zero-feature baseline — inputs zeroed, with only the head bias and BatchNorm statistics available — which exposes dataset priors. The reliable axes should exceed this bar.
 
-Weak key accuracy is 0.557 versus a zero-feature baseline of 0.126, a gap of +0.431. The baseline is near chance, confirming the gain is feature-specific and not prior-driven. Pitch-class macro-F1 shows a positive gap of +0.024. Instrument macro-F1 shows +0.075 but requires class-imbalance controls before a strong claim is warranted.
+Weak key accuracy is 0.557 versus a zero-feature baseline of 0.126, a gap of +0.431. The baseline is near chance, confirming the gain is feature-specific and not prior-driven. Pitch-class macro-F1 shows a positive gap of +0.024. Instrument macro-F1 shows +0.075 but still needs class-imbalance controls.
 
 The excluded axes require a different reading. Instrument micro-F1 is 0.791 while the zero-feature baseline is 0.835 — the baseline is *higher*. Meter accuracy is 0.783 versus 0.855. These are not failures of S_plan. They are attributes dominated by common-class and common-meter priors in the Slakh corpus. High absolute accuracy is not evidence. The zero-feature gap is the only meaningful diagnostic here.
 
-RQ3 receives a qualified positive answer: S_plan encodes key and pitch-class structure well above the prior baseline. Meter and instrument micro-F1 are excluded until label-shuffle controls confirm feature-specific learning.
+RQ3 receives a qualified positive answer: S_plan encodes key and pitch-class structure well above the prior baseline. Meter and instrument micro-F1 are excluded until additional controls are complete.
 
 ---
 
-## Slide 17 — RQ3: Axis Safety
+## Slide 17 — RQ3: Supported Axes
 
-This table formalizes the claim boundary for each MIR axis. Above the separator: weak key, pitch-class, and instrument macro-F1, where S_plan exceeds the zero-feature baseline. These are the paper-safe claims, always reported with the baseline gap, not as standalone numbers. Below the separator: instrument micro-F1 and meter accuracy, excluded entirely because the zero-feature baseline exceeds S_plan.
+This table summarizes the support by MIR axis. Weak key has the strongest support, pitch-class shows a positive feature-specific signal, and instrument macro-F1 is positive but sensitive to class imbalance. Instrument micro-F1 and meter accuracy are prior-dominated because the zero-feature baseline is higher.
 
-Two controls — label-shuffle and target-prior — are pending. The probing claims are provisional until those pass.
+The important habit is to report each axis with its zero-feature gap. Absolute accuracy alone is not enough for these probing results.
 
 ---
 
@@ -170,7 +170,7 @@ Both results isolate the same root cause. Symbolic tokens must enter through the
 
 ---
 
-## Slide 20 — Limitations
+## Slide 20 — Current Scope and Next Steps
 
 Five limitations must be stated precisely.
 
@@ -180,7 +180,7 @@ Second, oracle symbolic input. S_plan tokens are derived from ground-truth MIDI 
 
 Third, no LLM-supervised tokenizer. S_plan is trained via reconstruction and MIR objectives only, not via an LLM decoder objective. Text-language grounding — music captioning, symbolic QA — is outside the current scope.
 
-Fourth, pending MIR controls. Label-shuffle and target-prior controls for probing are incomplete. Instrument macro-F1 and several other axes cannot be claimed as robust symbolic evidence until those controls pass.
+Fourth, MIR controls in progress. Label-shuffle and target-prior controls will strengthen the probing analysis. Instrument macro-F1 and several other axes need those controls before being used as headline symbolic evidence.
 
 Fifth, Slakh-only scope. All experiments use a synthesized paired audio-MIDI corpus. Generalization to real-world recordings is outside the current scope.
 
@@ -188,7 +188,7 @@ Fifth, Slakh-only scope. All experiments use a synthesized paired audio-MIDI cor
 
 ## Slide 21 — Conclusion
 
-The paper's central claim is conservative but supported. S_plan is a compact symbolic codec with acoustic-token utility and recoverable music-structural content under controlled Slakh experiments.
+The central result is focused but supported. S_plan is a compact symbolic codec with acoustic-token utility and recoverable music-structural content under controlled Slakh experiments.
 
 For RQ1: aligned S_plan reduces C_a cross-entropy in three independent controlled comparisons at different training scales. Most rigorously in the matched four-condition evaluation, test CE is 5.600 versus 5.859 for reason-only.
 
@@ -198,6 +198,6 @@ For RQ3: MIR probing recovers weak key accuracy +0.431 and pitch-class +0.024 ab
 
 Two negative results establish stream-native interface as a necessary design constraint.
 
-The central contribution is methodological as much as empirical. Credible symbolic-fusion claims require multi-condition evaluation with matched corrupted controls, zero-feature MIR baselines, and honest reporting of what each comparison can and cannot support. This evaluation framework applies broadly to any future work claiming symbolic grounding in audio language models.
+The contribution is methodological as much as empirical. Matched corrupted controls, zero-feature MIR baselines, and a clear separation between capacity effects and alignment-specific content make the symbolic-fusion evidence interpretable. This evaluation framework applies broadly to future work on symbolic grounding in audio language models.
 
 Thank you.

@@ -172,9 +172,8 @@
 
   \smallskip
   \begin{tcolorbox}[key]
-    Experiments are \textbf{evidence for these claims}, not the claims themselves.
-    Each comparison uses the same aligned / shuffled / dummy protocol so gains can be
-    attributed precisely to symbolic content — not to extra tokens.
+    Each comparison uses the same aligned / shuffled / dummy protocol, so gains can be
+    attributed to symbolic content rather than extra tokens alone.
   \end{tcolorbox}
 \end{frame}
 
@@ -383,7 +382,7 @@
 
   \smallskip
   \begin{tcolorbox}[good]
-    \textbf{Claim rule:} aligned must beat \emph{both} shuffled and dummy.
+    \textbf{Evaluation criterion:} aligned must beat \emph{both} shuffled and dummy.
     Shuffled preserves statistics but breaks alignment; dummy removes all content.
     Together they isolate the alignment-specific effect from pure capacity.
   \end{tcolorbox}
@@ -413,8 +412,8 @@
   \smallskip
   \begin{tcolorbox}[good]
     Books 2–4 reach 72–81\% utilization — no codebook collapse.
-    This is a \textbf{prerequisite}, not a claim: it establishes that
-    differences in downstream comparisons come from symbolic content, not codec failure.
+    This validates the codec before downstream comparison: later differences are
+    not explained by reconstruction failure.
   \end{tcolorbox}
 \end{frame}
 
@@ -461,7 +460,7 @@
   \begin{tcolorbox}[good]
     \textbf{First evidence for RQ1.} Aligned beats both corrupted controls.
     Temporal alignment of symbolic content to its own audio window drives the gain.
-    Claim boundary: proxy task; end-to-end integration is tested separately.
+    This proxy task is followed by end-to-end integration.
   \end{tcolorbox}
 \end{frame}
 
@@ -487,7 +486,8 @@
   \begin{tcolorbox}[good]
     \textbf{RQ1 holds with end-to-end integration.}
     Replicates as a native third stream, not a side-channel.
-    Rules out a proxy-task artifact. Sequence 557 tokens, \textbf{0\% truncation}.
+    The effect also appears outside the proxy setup. Sequence 557 tokens,
+    \textbf{0\% truncation}.
   \end{tcolorbox}
 \end{frame}
 
@@ -515,7 +515,7 @@
     \textbf{RQ1 answered positively} — most rigorous evidence.
     Gate confirms the model opens the symbolic slot more for aligned (0.177)
     than shuffled (0.167) or dummy (0.163).\\
-    Boundary: oracle MIDI input; semantic-token CE only.
+    Scope: oracle MIDI input; semantic-token CE only.
   \end{tcolorbox}
 \end{frame}
 
@@ -550,7 +550,7 @@
 
   \smallskip
   \begin{tcolorbox}[good]
-    \textbf{RQ2 answered positively.} Consistent direction rules out a single-run artifact.
+    \textbf{RQ2 answered positively.} The direction is consistent across independent comparisons.
     Corroborated by gate: aligned 0.177 $>$ shuffled 0.167 $>$ dummy 0.163.
   \end{tcolorbox}
 \end{frame}
@@ -577,8 +577,8 @@
 
   \smallskip
   \begin{tcolorbox}[key]
-    High accuracy alone is \emph{not} evidence — a zero-feature baseline is mandatory.
-    Weak key ($+0.431$ gap) and pitch-class ($+0.024$ gap) are the strongest safe axes.
+    The zero-feature baseline separates structural signal from dataset priors.
+    Weak key ($+0.431$ gap) and pitch-class ($+0.024$ gap) are the strongest axes.
     \textbf{RQ3: qualified positive answer} — key and pitch-class confirmed, meter and
     instrument micro-F1 excluded.
   \end{tcolorbox}
@@ -587,25 +587,24 @@
 % ----------------------------------------------------------------
 % 12 — RQ3: AXIS SAFETY
 % ----------------------------------------------------------------
-\begin{frame}{RQ3: Which Axes Can We Claim?}
+\begin{frame}{RQ3: Which Axes Are Supported?}
 
   {\footnotesize\renewcommand{\arraystretch}{0.88}
   \begin{tabular}{p{3.0cm}p{2.2cm}p{6.5cm}}
     \toprule
     \textbf{Axis} & \textbf{Gap} & \textbf{Status} \\
     \midrule
-    Weak key accuracy     & $+0.431$ & \pos{Safe to claim.} Label-shuffle pending. \\
-    Pitch-class macro-F1  & $+0.024$ & Positive; target-prior control needed. \\
-    Instrument macro-F1   & $+0.075$ & Some signal; class imbalance pending. \\
+    Weak key accuracy     & $+0.431$ & \pos{Strongest support.} \\
+    Pitch-class macro-F1  & $+0.024$ & Positive feature-specific signal. \\
+    Instrument macro-F1   & $+0.075$ & Positive, with class-imbalance sensitivity. \\
     \midrule
-    Instrument micro-F1   & $-0.044$ & \bad{Excluded.} Common-class prior. \\
-    Meter accuracy        & $-0.072$ & \bad{Excluded.} Common-meter prior. \\
+    Instrument micro-F1   & $-0.044$ & \bad{Prior-dominated.} Common-class baseline wins. \\
+    Meter accuracy        & $-0.072$ & \bad{Prior-dominated.} Common-meter baseline wins. \\
     \bottomrule
   \end{tabular}}
 
   \vspace{4pt}
-  {\footnotesize\color{Muted} Paper-safe claim: weak key, pitch-class, instrument macro-F1 — always reported with the zero-feature gap.
-  Label-shuffle and target-prior controls pending.}
+  {\footnotesize\color{Muted} Report each MIR axis with its zero-feature gap; absolute accuracy alone is not enough.}
 \end{frame}
 
 % ----------------------------------------------------------------
@@ -623,7 +622,7 @@
   {\footnotesize\color{Muted}%
    Left: ground-truth MIDI piano roll.\quad
    Right: pitch-region reconstruction from the \splan{} codec.\\
-   Boundary: symbolic feature reconstruction — not MIDI transcription or waveform generation.}
+   This shows symbolic feature reconstruction, not MIDI transcription or waveform generation.}
 \end{frame}
 
 % ----------------------------------------------------------------
@@ -656,7 +655,7 @@
 % ----------------------------------------------------------------
 % 15 — LIMITATIONS
 % ----------------------------------------------------------------
-\begin{frame}{What We Cannot Claim Yet}
+\begin{frame}{Current Scope and Next Steps}
 
   {\small
   \begin{tabular}{p{3.0cm}p{9.0cm}}
@@ -669,8 +668,8 @@
       Aligned MIDI unavailable at inference on real audio. Needs audio-to-\splan{} predictor. \\[4pt]
     No LLM-supervised tokenizer &
       Text-language grounding (open QA, captioning) not yet trained. \\[4pt]
-    Pending MIR controls &
-      Label-shuffle and target-prior controls for probing are incomplete. \\[4pt]
+    MIR controls in progress &
+      Label-shuffle and target-prior controls will strengthen the probing analysis. \\[4pt]
     Slakh only &
       No real-recording or cross-domain transfer evidence. \\
     \bottomrule
@@ -679,7 +678,7 @@
   \smallskip
   \begin{tcolorbox}[warn]
     \textbf{Next priority:} decode $C_a$ from the aligned checkpoint to waveform and
-    compare perceptually against shuffled — converting the token-level claim into
+    compare perceptually against shuffled — connecting the token-level result to
     perceptual audio evidence.
   \end{tcolorbox}
 \end{frame}
@@ -745,7 +744,7 @@
 \end{frame}
 
 \begin{frame}{Backup: Per-Window Case Spectrum (Stream-Native Warmup)}
-  \framesubtitle{Both positive and boundary cases — no cherry-picking}
+  \framesubtitle{Mixed per-window margins in the stream-native warmup}
 
   {\small\setlength{\tabcolsep}{4pt}
   \begin{tabular}{p{1.9cm}p{2.4cm}p{2.4cm}p{1.9cm}p{3.4cm}}
@@ -754,15 +753,15 @@
     \midrule
     \texttt{w000} & 5.226 & 5.280 & \pos{$+0.054$} & Strong positive \\
     \texttt{w001} & 6.159 & 6.163 & \pos{$+0.004$} & Small positive \\
-    \texttt{w002} & 6.097 & 6.091 & \bad{$-0.006$} & Boundary / failure \\
-    \texttt{w003} & 5.876 & 5.869 & \bad{$-0.007$} & Boundary / failure \\
+    \texttt{w002} & 6.097 & 6.091 & \bad{$-0.006$} & Slight negative \\
+    \texttt{w003} & 5.876 & 5.869 & \bad{$-0.007$} & Slight negative \\
     \bottomrule
   \end{tabular}}
 
   \smallskip
   \begin{tcolorbox}[key]
     Aggregate positive result holds even though individual windows show mixed margins.
-    Reporting boundary cases prevents cherry-picking in qualitative reports.
+    The warmup contains both strong positive and near-zero examples.
   \end{tcolorbox}
 \end{frame}
 
