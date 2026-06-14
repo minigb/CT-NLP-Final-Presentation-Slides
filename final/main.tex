@@ -140,10 +140,6 @@
   \end{tabular}}
 
   \smallskip
-  MIDI encodes these exactly: note events, instrument tracks, tempo and key events.
-  We learn a \emph{compact} representation of this information and inject it into a LALM.
-
-  \smallskip
   \begin{tcolorbox}[key]
     Verifying that symbolic injection is \emph{useful} requires more than comparing to
     no-injection: a shuffled or dummy stream of the same length could produce the same
@@ -348,15 +344,10 @@
   \end{tabular}}
 
   \smallskip
-  Aligned beats shuffled ($\Delta{=}{-}0.018$) and dummy ($\Delta{=}{-}0.019$) consistently.
-  Sequence 557 tokens, \textbf{0\% truncation}.
-
-  \smallskip
   \begin{tcolorbox}[good]
     \textbf{RQ1 holds with end-to-end integration.}
-    The positive gap replicates when \splan{} is inserted as a native third stream —
-    not just as an external side-channel.
-    This rules out a proxy-task artifact.
+    Replicates as a native third stream, not a side-channel.
+    Rules out a proxy-task artifact. Sequence 557 tokens, \textbf{0\% truncation}.
   \end{tcolorbox}
 \end{frame}
 
@@ -378,10 +369,6 @@
     \hook{} Dummy stream      & 5.614 & 274 & 0.119 & 0.163 \\
     \bottomrule
   \end{tabular}}
-
-  \smallskip
-  Aligned beats both corrupted controls ($\Delta{=}{-}0.014$) on top of a large
-  capacity gain ($-0.245$ vs.\ reason-only).
 
   \smallskip
   \begin{tcolorbox}[good]
@@ -410,8 +397,6 @@
   \end{tabular}}
 
   \smallskip
-  Alignment-specific gap is \emph{consistent in sign} across all three comparisons:
-
   {\footnotesize
   \begin{tabular}{p{4.5cm}cc}
     \toprule
@@ -449,8 +434,6 @@
     Meter accuracy        & 0.783 & \bad{0.855} \\
     \bottomrule
   \end{tabular}}
-
-  \mute{\footnotesize Red = zero-feature control outperforms — these axes are prior-dominated.}
 
   \smallskip
   \begin{tcolorbox}[key]
@@ -521,10 +504,6 @@
     Dummy                & 5.510 & \bad{$+0.150$} \\
     \bottomrule
   \end{tabular}}
-
-  \smallskip
-  Aligned $\approx$ shuffled $\approx$ dummy: model ignores symbolic content entirely.
-  \textbf{Adapter gating:} gate converges to $3.4\times10^{-4}$ — training stable, fusion absent.
 
   \smallskip
   \begin{tcolorbox}[warn]
