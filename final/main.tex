@@ -53,9 +53,6 @@
 \setbeamertemplate{footline}{%
   \leavevmode\hbox{%
     \begin{beamercolorbox}[wd=.75\paperwidth,ht=1.8ex,dp=0.9ex,leftskip=0.4cm]{normal text}%
-      \tiny\color{Muted}%
-      $S_{\mathrm{plan}}$: Symbolic Planning Tokens for Music-Aware Audio LMs
-      \;\textbullet\; KAIST CT-NLP 2026%
     \end{beamercolorbox}%
     \begin{beamercolorbox}[wd=.25\paperwidth,ht=1.8ex,dp=0.9ex,rightskip=0.4cm plus1fil]{normal text}%
       \tiny\color{Muted}\hfill\insertframenumber\,/\,\inserttotalframenumber%
@@ -160,20 +157,20 @@
 % ----------------------------------------------------------------
 \begin{frame}{Three Research Questions Organize This Work}
 
-  {\small
+  {\footnotesize
   \begin{tabular}{p{2.2cm}p{10.0cm}}
     \toprule
     \textbf{Question} & \textbf{What we need to show} \\
     \midrule
     \textbf{RQ1}\\Acoustic utility &
-      Aligned symbolic stream reduces acoustic token cross-entropy more than a shuffled
-      or dummy stream of the same size. \\[8pt]
+      Aligned symbolic stream reduces acoustic token CE more than a shuffled or dummy
+      stream of the same size. \\
     \textbf{RQ2}\\Alignment specificity &
-      The gain comes from \emph{alignment-specific content}, not token budget or
-      model capacity.  Requires aligned $>$ shuffled AND aligned $>$ dummy. \\[8pt]
+      The gain comes from \emph{alignment-specific content}, not token budget.
+      Requires aligned $>$ shuffled AND aligned $>$ dummy. \\
     \textbf{RQ3}\\Structural content &
-      Symbolic stream encodes music-structural attributes recoverable by probing —
-      verified against a zero-feature baseline that exposes dataset priors. \\
+      Symbolic stream encodes music-structural attributes recoverable by probing,
+      verified against a zero-feature baseline. \\
     \bottomrule
   \end{tabular}}
 
@@ -230,7 +227,6 @@
 % 4 — CONTROLS
 % ----------------------------------------------------------------
 \begin{frame}{Evaluation Protocol: Every Comparison Uses All Four Conditions}
-  \framesubtitle{A gain of aligned over both shuffled and dummy is required for an alignment-specific claim}
 
   {\small
   \begin{tabular}{p{3.0cm}p{4.5cm}p{4.5cm}}
@@ -261,7 +257,6 @@
 % 5 — PREREQUISITE: CODEC TABLE
 % ----------------------------------------------------------------
 \begin{frame}{Prerequisite: The Symbolic Codec Reconstructs Faithfully}
-  \framesubtitle{4-stage RVQ, 512 codes per stage — 42{,}000 training steps on Slakh}
 
   {\small
   \begin{tabular}{ll}
@@ -309,7 +304,7 @@
 % 7 — RQ1: PROXY TASK
 % ----------------------------------------------------------------
 \begin{frame}{RQ1 — First Positive Signal: Proxy Prediction Task}
-  \framesubtitle{Frozen codec + small transformer head predicting acoustic tokens from symbolic representations}
+  \framesubtitle{Frozen codec + proxy head; 5{,}000 steps, 1{,}385 test windows}
 
   {\small
   \begin{tabular}{p{4.0cm}ccc}
@@ -325,10 +320,6 @@
     \hook{} Random stream     & 7.540 & 7.632 & 2064 \\
     \bottomrule
   \end{tabular}}
-
-  \smallskip
-  Aligned beats reason-only ($\Delta{=}{-}0.061$) and shuffled ($\Delta{=}{-}0.034$).
-  Learned \splan{} outperforms the hand-crafted rule summary ($-0.048$ vs.\ $-0.013$).
 
   \smallskip
   \begin{tcolorbox}[good]
@@ -406,10 +397,8 @@
 % ----------------------------------------------------------------
 \begin{frame}{RQ2: The Gain Is Alignment-Specific, Not Token Capacity}
 
-  The $-0.259$ CE gain over reason-only decomposes into two distinct effects:
-
-  {\small
-  \begin{tabular}{p{8.0cm}c}
+  {\footnotesize
+  \begin{tabular}{p{7.5cm}c}
     \toprule
     \textbf{Effect} & \textbf{$\Delta$ CE} \\
     \midrule
@@ -421,24 +410,23 @@
   \end{tabular}}
 
   \smallskip
-  The alignment-specific effect is consistent across all three controlled comparisons:
+  Alignment-specific gap is \emph{consistent in sign} across all three comparisons:
 
-  {\small
-  \begin{tabular}{p{4.5cm}p{4.0cm}c}
+  {\footnotesize
+  \begin{tabular}{p{4.5cm}cc}
     \toprule
-    \textbf{Comparison} & \textbf{Setup} & \textbf{Aligned vs.\ shuffled} \\
+    \textbf{Comparison} & \textbf{Steps} & \textbf{Aligned vs.\ shuffled} \\
     \midrule
-    Proxy task          & Frozen codec, 5{,}000 steps   & $-0.034$ \\
-    Stream-native warmup & End-to-end, 3{,}000 steps    & $-0.018$ \\
-    Hardened comparison & Matched, 800 steps            & $-0.014$ \\
+    Proxy task           & 5{,}000 & $-0.034$ \\
+    Stream-native warmup & 3{,}000 & $-0.018$ \\
+    Hardened comparison  &   800   & $-0.014$ \\
     \bottomrule
   \end{tabular}}
 
   \smallskip
   \begin{tcolorbox}[good]
-    \textbf{RQ2 answered positively.} Consistent direction across independent setups rules
-    out a single-run artifact. Capacity effect is dominant; alignment-specific effect is
-    smaller but robust — and corroborated by the gate signal.
+    \textbf{RQ2 answered positively.} Consistent direction rules out a single-run artifact.
+    Corroborated by gate: aligned 0.177 $>$ shuffled 0.167 $>$ dummy 0.163.
   \end{tcolorbox}
 \end{frame}
 
@@ -446,7 +434,6 @@
 % 11 — RQ3: MIR PROBING
 % ----------------------------------------------------------------
 \begin{frame}{RQ3: Music Structure Is Recoverable from \splan{}}
-  \framesubtitle{Supervised probing on frozen embeddings vs.\ zero-feature baseline (head bias only)}
 
   {\small
   \begin{tabular}{p{4.0cm}cc}
@@ -478,28 +465,24 @@
 % 12 — RQ3: AXIS SAFETY
 % ----------------------------------------------------------------
 \begin{frame}{RQ3: Which Axes Can We Claim?}
-  \framesubtitle{Organized by what the zero-feature control reveals about each attribute}
 
-  {\small
-  \begin{tabular}{p{3.0cm}p{2.5cm}p{6.2cm}}
+  {\footnotesize\renewcommand{\arraystretch}{0.88}
+  \begin{tabular}{p{3.0cm}p{2.2cm}p{6.5cm}}
     \toprule
-    \textbf{Axis} & \textbf{Gap vs.\ zero-feat.} & \textbf{Status} \\
+    \textbf{Axis} & \textbf{Gap} & \textbf{Status} \\
     \midrule
-    Weak key accuracy     & $+0.431$ & \pos{Safe to claim.} Label-shuffle control pending. \\
-    Pitch-class macro-F1  & $+0.024$ & Positive but small; target-prior control needed. \\
-    Instrument macro-F1   & $+0.075$ & Some signal; class imbalance must be resolved. \\
+    Weak key accuracy     & $+0.431$ & \pos{Safe to claim.} Label-shuffle pending. \\
+    Pitch-class macro-F1  & $+0.024$ & Positive; target-prior control needed. \\
+    Instrument macro-F1   & $+0.075$ & Some signal; class imbalance pending. \\
     \midrule
-    Instrument micro-F1   & $-0.044$ & \bad{Excluded.} Common-class prior dominates. \\
-    Meter accuracy        & $-0.072$ & \bad{Excluded.} Common-meter prior dominates. \\
+    Instrument micro-F1   & $-0.044$ & \bad{Excluded.} Common-class prior. \\
+    Meter accuracy        & $-0.072$ & \bad{Excluded.} Common-meter prior. \\
     \bottomrule
   \end{tabular}}
 
-  \smallskip
-  \begin{tcolorbox}[warn]
-    Paper-safe claim: weak key, pitch-class, and instrument macro-F1 — always reported
-    \emph{alongside} the zero-feature gap, not as standalone numbers.
-    Label-shuffle and target-prior controls are pending.
-  \end{tcolorbox}
+  \vspace{4pt}
+  {\footnotesize\color{Muted} Paper-safe claim: weak key, pitch-class, instrument macro-F1 — always reported with the zero-feature gap.
+  Label-shuffle and target-prior controls pending.}
 \end{frame}
 
 % ----------------------------------------------------------------
@@ -524,7 +507,6 @@
 % 14 — DESIGN CONSTRAINT
 % ----------------------------------------------------------------
 \begin{frame}{Design Constraint: Stream-Native Interface Is Necessary}
-  \framesubtitle{Two negative results that establish the interface requirement — not incidental failures}
 
   \textbf{Side-channel insertion:}
 
@@ -588,31 +570,27 @@
 % ----------------------------------------------------------------
 \begin{frame}{Conclusion: Three Research Questions Answered}
 
-  {\small
-  \begin{tabular}{p{1.5cm}p{10.5cm}}
+  {\footnotesize\renewcommand{\arraystretch}{0.92}
+  \begin{tabular}{p{1.2cm}p{11.0cm}}
     \toprule
     \textbf{RQ} & \textbf{Finding} \\
     \midrule
-    \textbf{RQ1}\\Acoustic utility &
-      \pos{Positive.}\;\; Aligned \splan{} reduces acoustic token CE in three independent
-      controlled comparisons. Primary result: test CE 5.600 vs.\ reason-only 5.859. \\[8pt]
-    \textbf{RQ2}\\Alignment specificity &
-      \pos{Positive.}\;\; Aligned beats both shuffled and dummy consistently
-      ($\Delta\in[-0.034,-0.014]$ across all three comparisons).
-      Corroborated by gate values: 0.177 > 0.167 > 0.163. \\[8pt]
-    \textbf{RQ3}\\Structural content &
-      \pos{Qualified positive.}\;\; Weak key ($+0.431$) and pitch-class ($+0.024$)
-      confirmed above the zero-feature baseline.
-      Meter and instrument micro-F1 excluded as prior-dominated. \\
+    \textbf{RQ1} &
+      \textbf{Acoustic utility — }\pos{Positive.}\;
+      Aligned \splan{} reduces CE from 5.859 to 5.600; consistent across all three comparisons. \\[2pt]
+    \textbf{RQ2} &
+      \textbf{Alignment specificity — }\pos{Positive.}\;
+      Aligned $>$ shuffled $>$ dummy ($\Delta\in[-0.034,-0.014]$); gate 0.177 $>$ 0.167 $>$ 0.163. \\[2pt]
+    \textbf{RQ3} &
+      \textbf{Structural content — }\pos{Qualified positive.}\;
+      Weak key ($+0.431$) and pitch-class ($+0.024$) confirmed; meter and micro-F1 excluded. \\
     \bottomrule
   \end{tabular}}
 
   \smallskip
   \begin{tcolorbox}[good]
-    The design constraint result (side-channel and adapter failures) makes RQ1/RQ2
-    \emph{non-trivial}: a positive claim required finding the right interface first.
-    Our multi-condition protocol (aligned / shuffled / dummy + zero-feature probing)
-    is the methodological contribution — applicable beyond \splan{}.
+    Design constraint (interface failures) makes RQ1/RQ2 non-trivial.
+    Multi-condition protocol (aligned/shuffled/dummy + zero-feature probing) is the methodological contribution.
   \end{tcolorbox}
 \end{frame}
 
@@ -624,7 +602,7 @@
 \begin{frame}{Backup: Per-Codebook Cross-Entropy}
   \framesubtitle{Symbolic benefit distributed across all 8 acoustic codebooks (hardened comparison)}
 
-  {\small
+  {\footnotesize
   \begin{tabular}{p{3.0cm}cccccccc}
     \toprule
     \textbf{Condition} & \textbf{cb0} & \textbf{cb1} & \textbf{cb2} & \textbf{cb3}
@@ -650,8 +628,8 @@
 \begin{frame}{Backup: Per-Window Case Spectrum (Stream-Native Warmup)}
   \framesubtitle{Both positive and boundary cases — no cherry-picking}
 
-  {\small
-  \begin{tabular}{p{2.0cm}p{2.5cm}p{2.5cm}p{2.0cm}p{3.5cm}}
+  {\small\setlength{\tabcolsep}{4pt}
+  \begin{tabular}{p{1.9cm}p{2.4cm}p{2.4cm}p{1.9cm}p{3.4cm}}
     \toprule
     \textbf{Window} & \textbf{Aligned CE} & \textbf{Best control} & \textbf{Margin} & \textbf{Note} \\
     \midrule
