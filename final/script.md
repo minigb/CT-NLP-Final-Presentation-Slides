@@ -16,35 +16,39 @@ Unified audio language models predict discrete audio tokens autoregressively and
 
 So we propose to inject a compact symbolic stream into the LALM context, aligned to the model's positional encoding, to test whether it can help the model use musical structure. 
 
-Research questions are about music-aware understanding, alignment-specific use of symbolic content, and music-structural understanding. The metric evidence is primarily cross-entropy on acoustic token prediction under oracle symbolic input, with MIR probing as a secondary metric for music-structural understanding.
 
 ---
 
 ## Slide 3 — Three Research Questions
 
+Research questions are about music-aware understanding, alignment-specific use of symbolic content, and music-structural understanding. The metric evidence is primarily cross-entropy on acoustic token prediction under oracle symbolic input, with MIR probing as a secondary metric for music-structural understanding.
+
+<!-- 
 We organize this work around three research questions.
 
 RQ1 is the high-level question about music-aware understanding: does a compact symbolic stream, aligned to an audio window's own MIDI, help the model use musical structure? The metric evidence is narrower: lower acoustic-token CE under aligned S_plan compared with shuffled and dummy controls. So we separate the claim from the measurement: understanding is the goal, and CE gain is the initial controlled evidence.
 
 RQ2 asks whether the apparent understanding gain is alignment-specific. The conceptual claim is that correct symbolic-audio alignment matters, not just extra token capacity. The metric evidence is narrower: aligned S_plan must beat both shuffled and dummy under matched conditions. Shuffled preserves token statistics while breaking temporal alignment. Dummy removes all symbolic content. Aligned must clear both bars.
 
-RQ3 asks whether S_plan supports music-structural understanding. Here the metric evidence comes from MIR probing: can frozen S_plan embeddings recover musically meaningful attributes above a zero-feature baseline that exposes dataset priors?
+RQ3 asks whether S_plan supports music-structural understanding. Here the metric evidence comes from MIR probing: can frozen S_plan embeddings recover musically meaningful attributes above a zero-feature baseline that exposes dataset priors? -->
 
 ---
 
 ## Slide 4 — Approach
 
-This slide shows the proposed method at the UniAudio 2.0 level. The existing UniAudio pipeline already has a text tokenizer, a reasoning codec, audio understanding and generation experts, and reconstruction tokens for audio output.
+The proposed method is like this. The existing UniAudio pipeline already has a text tokenizer, a reasoning codec, audio understanding and generation experts, and reconstruction tokens for audio output.
 
-The red dashed branch is the part we add: a symbolic tokenizer. In our implementation, that symbolic tokenizer is S_plan. It takes MIDI-derived musical features, compresses them with a compact RVQ codec, and inserts the resulting symbolic tokens between the reasoning tokens and the acoustic tokens, forming R_a → S_plan → C_a. The total layout fits within the 1,024 context limit with zero truncation.
+So we add a symbolic tokenizer, S_plan. It takes MIDI-derived musical features, compresses them with a compact RVQ codec, and inserts the resulting symbolic tokens between the reasoning tokens and the acoustic tokens.
+<!-- The total layout fits within the 1,024 context limit with zero truncation. -->
 
-We use this compact fixed-length codec instead of raw MIDI because raw MIDI is too long and irregular for uniform controls.
+<!-- We use this compact fixed-length codec instead of raw MIDI because raw MIDI is too long and irregular for uniform controls. -->
 
 ---
 
 ## Slide 5 — Dataset: Slakh2100
 
-All experiments use Slakh2100, a multi-track paired audio-MIDI dataset synthesized with professional-grade sample-based virtual instruments. The dataset is split at the track level before windowing, so no musical phrase can appear in both train and test. The training split contains 1,289 tracks and 11,279 thirty-second windows; the held-out test set contains 151 tracks and 1,385 windows. All cross-entropy results in this talk are evaluated on that held-out test set.
+All experiments use Slakh2100, a multi-track paired audio-MIDI dataset synthesized with professional-grade sample-based virtual instruments.
+<!-- The dataset is split at the track level before windowing, so no musical phrase can appear in both train and test. The training split contains 1,289 tracks and 11,279 thirty-second windows; the held-out test set contains 151 tracks and 1,385 windows. All cross-entropy results in this talk are evaluated on that held-out test set. -->
 
 ---
 
