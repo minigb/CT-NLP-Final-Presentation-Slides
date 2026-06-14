@@ -14,6 +14,19 @@ Sections:
 2. UniAudio 2.0 Music Tasks.
 3. Symbolic-Aware MIDI / Music Tasks.
 
+The top of the page now includes a reviewer-facing claim map.  For a research
+discussion, start with the claim map, then go to the music section for the
+current symbolic-stream evidence, then go to the symbolic section for
+MIR-attribute and tokenizer examples.  The audio/speech section is intentionally
+a preservation anchor for future final-LALM integration rather than the current
+contribution headline.
+
+The page also includes a reviewer-risk checklist.  The highest-value missing
+items are EXP034B matched controls, EXP035 decoded rollout examples, the
+`S_plan`-MIR to instrument-presence QA bridge, and test-split MIR qualitative
+cards.  Adding more validation fixed examples is lower priority than closing
+those claim-critical gaps.
+
 The first section is backed by a new runnable compatibility scaffold in
 `source/demo`. It covers Text-to-Speech, Text-to-Sound, and Text-Instructed TTS
 using the English prompts from the public UniAudio2.0 demo. Audio-Instructed TTS
@@ -42,6 +55,16 @@ improvements.  The direct music-claim hardening path is EXP034A/EXP034B: matched
 no-symbolic or open-gate baselines versus aligned/shuffled/dummy `S_plan` stream
 variants under the same update budget.
 
+The current demo includes an EXP034B running-evidence card.  It is intentionally
+not marked claim-ready: aligned `S_plan` validation CE is improving and the gate
+is opening, but shuffled and dummy controls must finish at comparable steps
+before the result can be used as a positive music-stream claim.
+
+The demo also includes an EXP036/EXP035 bridge-readiness card.  EXP036 trains a
+UniAudio-style semantic-token checkpoint for `R_a + S_plan -> C_a` and writes the
+checkpoint schema expected by EXP035 decoded rollout export.  This is a
+generation-backend bridge, not yet text-to-music or song-generation evidence.
+
 ```bash
 cd /home/dabinkim_pt/symbolic-fused-lalm
 CUDA_DEVICE=0 SESSION=exp034_music_claim_hardening \
@@ -63,6 +86,15 @@ After the tmux run finishes:
 ```bash
 python source/exp/exp034_summarize_music_claim_hardening.py \
   --run-root exp_outputs/060528_uniaudio2-understanding-eval/exp034_music_claim_hardening/matched_lora_stream_s1000_seed260634
+```
+
+To refresh the EXP034B demo table while aligned and control runs are still in
+progress:
+
+```bash
+python source/demo/ingest/exp034b_collect_results.py \
+  --run-root exp_outputs/060528_uniaudio2-understanding-eval/exp034_music_claim_hardening/open_gate_s800_seed260635 \
+  --extra-run-root exp_outputs/060528_uniaudio2-understanding-eval/exp034_music_claim_hardening/open_gate_s800_seed260635_parallel_splan
 ```
 
 The third section exposes symbolic MIDI/music task boxes.  The completed
