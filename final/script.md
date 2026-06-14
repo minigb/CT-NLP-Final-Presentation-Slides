@@ -34,15 +34,39 @@ RQ3 on music-structural content: does the symbolic stream encode musically meani
 
 ## Slide 4 — Approach
 
-S_plan is a compact symbolic planning token that compresses MIDI-derived musical structure into a fixed-length RVQ stream. It is inserted between the reasoning tokens and the acoustic tokens of UniAudio 2.0, forming the sequence R_a → S_plan → C_a. The total layout — 151 reasoning frames, 30 symbolic frames, and 376 acoustic frames — fits within the 1024 context limit with zero truncation.
+S_plan is inserted as a third stream between the reasoning tokens and the acoustic tokens of UniAudio 2.0, forming the sequence R_a → S_plan → C_a. The total layout fits within the 1,024 context limit with zero truncation.
 
-The codec is a four-stage RVQ trained on MIDI-derived frame features extracted at 100 ms resolution: binary instrument flags, 12-dimensional pitch-class encoding, beat phase, tempo, note density, and polyphony. The encoder maps a 30-second window to a fixed 30-frame representation.
-
-Raw MIDI was not used for three reasons: standard tokenizations average 2,000 to 8,000 tokens per window, saturating the context; event timestamps are asynchronous with audio frames; and variable-length sequences cannot be given fixed-length shuffled or dummy controls, making the evaluation design impossible. The fixed-length design of S_plan is what makes the controlled protocol feasible.
+Raw MIDI was not used for three reasons. Standard tokenizations average 2,000 to 8,000 tokens per window, saturating the context. Event timestamps are asynchronous with audio frames. And variable-length sequences cannot be given fixed-length shuffled or dummy controls — which makes the evaluation design impossible. S_plan's fixed-length RVQ encoding solves all three.
 
 ---
 
-## Slide 5 — Evaluation Protocol
+## Slide 5 — Dataset: Slakh2100
+
+All experiments use Slakh2100, a multi-track paired audio-MIDI dataset synthesized with professional-grade sample-based virtual instruments. The dataset is split at the track level before windowing, so no musical phrase can appear in both train and test. The training split contains 1,289 tracks and 11,279 thirty-second windows; the held-out test set contains 151 tracks and 1,385 windows. All cross-entropy results in this talk are evaluated on that held-out test set.
+
+---
+
+## Slide 6 — MIDI Feature Extraction
+
+From each 30-second window, MIDI features are extracted at 100 ms resolution. The binary feature group — 41 dimensions — captures instrument-class presence across 34 Slakh classes, pitch-class activation across 12 semitones, and beat/downbeat phase. The continuous feature group — 12 dimensions — captures instantaneous tempo, note density, polyphony count, and an instrument-weighted energy proxy. Together, this gives a 53-dimensional frame vector normalized per dimension across the training split, yielding approximately 300 frames per window.
+
+---
+
+## Slide 7 — Codec Architecture
+
+The symbolic RVQ codec compresses the 53-dimensional, 300-frame input into a fixed 30-frame representation. A two-layer 1D CNN encoder with temporal pooling handles the variable-to-fixed compression. The residual vector quantizer applies four stages, each with 512 codes, trained with exponential moving average updates and codebook restart. A symmetric CNN decoder reconstructs the original 53-dimensional feature sequence. Training uses binary cross-entropy for the binary dimensions and MSE for continuous dimensions, run for 42,000 steps. The resulting 4-by-30 token stream uses the same multi-stream RVQ format as C_a — which is precisely what enables the stream-native positional encoding.
+
+---
+
+## Slide 8 — Training Setup
+
+All symbolic stream variants are trained via LoRA adapters on 140 attention modules of the frozen UniAudio 2.0 transformer. The reason-only configuration has approximately 10.8 million trainable parameters; adding the symbolic stream brings this to approximately 253 million. A learned scalar gate controls the magnitude of symbolic stream influence on the C_a prediction path.
+
+The hardened four-condition comparison — the primary result — uses 800 steps, batch size 1 with gradient accumulation 16, LoRA learning rate 10⁻⁵, symbolic stream learning rate 3×10⁻⁴, and gate learning rate 2×10⁻³. The random seed is fixed, and all four conditions are trained identically except for the stream variant.
+
+---
+
+## Slide 9 — Evaluation Protocol
 
 Every controlled comparison in this work uses four conditions under matched hyperparameters.
 
@@ -52,45 +76,43 @@ The claim rule is strict. A gain of aligned over *both* shuffled and dummy is re
 
 ---
 
-## Slide 6 — Prerequisite: Codec
+## Slide 10 — Prerequisite: Codec
 
-Before any downstream result can be trusted, the RVQ codec must faithfully reconstruct input symbolic features. As shown in the table, binary feature accuracy reaches 0.99777. Continuous feature MSE is 0.00172. Codebook utilization on books two through four is 72 to 81 percent, with no collapse — book one is underutilized at 31 percent, which is a known characteristic of early RVQ stages.
+Before any downstream result can be trusted, the RVQ codec must faithfully reconstruct input symbolic features. Binary feature accuracy reaches 0.99777. Continuous feature MSE is 0.00172. Codebook utilization on books two through four is 72 to 81 percent, with no collapse — book one is underutilized at 31 percent, which is a known characteristic of early RVQ stages. Per-window binary accuracy on all three fixed validation examples is 1.000.
 
-This is a prerequisite, not a claim. It establishes that differences in downstream experiments are attributable to symbolic content, not codec failure. Per-window binary accuracy on all three fixed validation examples is 1.000.
-
----
-
-## Slide 7 — Prerequisite: Feature Heatmap
-
-The heatmap on this slide shows a representative reconstruction. Ground-truth MIDI features are on the left; the S_plan reconstruction is on the right, for a 30-second window of Slakh track 01501. Binary accuracy is 1.000, MSE is 0.00174. The codec produces a technically healthy symbolic bottleneck: it compresses MIDI-derived structure without collapse and reconstructs features faithfully.
-
-One boundary must be stated: this is symbolic feature reconstruction, not MIDI transcription and not waveform generation.
+This is a prerequisite, not a claim. It establishes that differences in downstream experiments are attributable to symbolic content, not codec failure.
 
 ---
 
-## Slide 8 — RQ1: Proxy Task
+## Slide 11 — Prerequisite: Feature Heatmap
+
+The heatmap shows a representative reconstruction. Ground-truth MIDI features are on the left; the S_plan reconstruction is on the right, for a 30-second window of Slakh track 01501. Binary accuracy is 1.000. The codec produces a technically healthy symbolic bottleneck. One boundary: this is symbolic feature reconstruction, not MIDI transcription and not waveform generation.
+
+---
+
+## Slide 12 — RQ1: Proxy Task
 
 The first evidence for RQ1 comes from a proxy prediction task. A small transformer head is trained to predict C_a tokens from frozen R_a plus symbolic representations, over 5,000 steps on 1,385 held-out test windows.
 
-As shown in the table, aligned S_plan achieves the lowest test cross-entropy of 7.5963, outperforming reason-only by 0.061, low-rate rule summaries by 0.048, shuffled by 0.034, and dummy by 0.098. The learned codec outperforms the hand-crafted rule summary, confirming the value of end-to-end symbolic compression. This is the first evidence that S_plan carries acoustically useful information beyond what R_a alone encodes.
+Aligned S_plan achieves the lowest test cross-entropy of 7.5963, outperforming reason-only by 0.061, low-rate rule summaries by 0.048, shuffled by 0.034, and dummy by 0.098. The learned codec outperforms the hand-crafted rule summary, confirming the value of end-to-end symbolic compression. This is the first evidence that S_plan carries acoustically useful information beyond what R_a alone encodes.
 
 The claim boundary is noted: this is a proxy setup with a frozen codec. The full end-to-end integration is tested separately.
 
 ---
 
-## Slide 9 — RQ1: Stream-Native
+## Slide 13 — RQ1: Stream-Native
 
 The full three-stream layout — R_a → S_plan → C_a — is then evaluated with streams aligned to the base model's positional encoding, under a shorter warmup budget of 3,000 steps.
 
-Aligned achieves test CE 5.766 versus shuffled at 5.785, a delta of −0.018, and dummy at 5.785, a delta of −0.019. On the four validation fixed windows, two show strong positive margins of +0.054 and +0.004, and two show near-zero or slightly negative margins. This is characteristic of a real but small signal that has not saturated the training budget. The margin is modest but consistent in sign.
+Aligned achieves test CE 5.766 versus shuffled at 5.785, a delta of −0.018, and dummy at 5.785, a delta of −0.019. On the four validation fixed windows, two show strong positive margins and two show near-zero or slightly negative margins — characteristic of a real but small signal that has not saturated the training budget. The margin is modest but consistent in sign.
 
 The positive gap replicates in a setup that is architecturally distinct from the proxy task. This rules out a proxy-specific artifact.
 
 ---
 
-## Slide 10 — RQ1: Primary Result
+## Slide 14 — RQ1: Primary Result
 
-The primary evaluation runs all four conditions under fully identical hyperparameters — 800 steps, batch size 1 with gradient accumulation 16, LoRA learning rate 10⁻⁵, symbolic learning rate 3×10⁻⁴, gate learning rate 2×10⁻³, and a fixed random seed — differing only in the symbolic stream variant.
+The primary evaluation runs all four conditions under fully identical hyperparameters, differing only in the symbolic stream variant.
 
 The result decomposes into two layers. Any symbolic stream variant — shuffled or dummy — achieves test CE around 5.614, a reduction of approximately 0.245 relative to reason-only at 5.859. That is the stream capacity effect. Aligned S_plan achieves 5.600, an additional 0.014 below both corrupted controls. That is the alignment-specific effect.
 
@@ -98,31 +120,31 @@ The learned gate corroborates through an independent channel: the model opens th
 
 ---
 
-## Slide 11 — RQ2: Alignment Decomposition
+## Slide 15 — RQ2: Alignment Decomposition
 
 RQ2 requires demonstrating that the gain is not explained by token capacity alone.
 
 The decomposition in the upper table is clear. The dominant effect is stream capacity: any symbolic stream outperforms reason-only by approximately 0.245 CE. The alignment-specific effect — aligned versus both shuffled and dummy — is 0.014 to 0.015. Small, but present.
 
-The critical evidence is in the lower table. Across three completely independent comparisons, the alignment-specific gap is −0.034 in the proxy task, −0.018 in the stream-native warmup, and −0.014 in the hardened comparison. The magnitude decreases as training budget shrinks, which is expected — shorter training leaves less room for conditions to diverge. But the sign is consistent across all three. A finding that appears in one run could be noise. A finding consistent in direction across independent setups at different scales is substantially more robust.
+The critical evidence is in the lower table. Across three completely independent comparisons, the alignment-specific gap is −0.034 in the proxy task, −0.018 in the stream-native warmup, and −0.014 in the hardened comparison. The magnitude decreases as training budget shrinks — shorter training leaves less room for conditions to diverge. But the sign is consistent across all three. A finding consistent in direction across independent setups at different scales is substantially more robust than a single-run result.
 
 The gate provides independent corroboration. RQ2 is answered positively: the alignment-specific effect is not explainable by token capacity alone.
 
 ---
 
-## Slide 12 — RQ3: MIR Probing
+## Slide 16 — RQ3: MIR Probing
 
 For RQ3, linear probing heads are trained on frozen S_plan embeddings to recover music-structural attributes. The evaluation compares against a zero-feature baseline — inputs zeroed, with only the head bias and BatchNorm statistics available — which exposes dataset priors. Any claimed axis must exceed this bar.
 
-The table shows which axes do and do not. Weak key accuracy is 0.557 versus a zero-feature baseline of 0.126, a gap of +0.431. The baseline is near chance, confirming the gain is feature-specific and not prior-driven. This is the strongest signal in the probing results. Pitch-class macro-F1 shows a positive gap of +0.024. Instrument macro-F1 shows +0.075 but requires class-imbalance controls before a strong claim is warranted.
+Weak key accuracy is 0.557 versus a zero-feature baseline of 0.126, a gap of +0.431. The baseline is near chance, confirming the gain is feature-specific and not prior-driven. Pitch-class macro-F1 shows a positive gap of +0.024. Instrument macro-F1 shows +0.075 but requires class-imbalance controls before a strong claim is warranted.
 
-The excluded axes require a different reading. Instrument micro-F1 is 0.791 while the zero-feature baseline is 0.835 — the baseline is *higher*. Meter accuracy is 0.783 versus 0.855. These are not failures of S_plan. They are attributes dominated by common-class and common-meter priors in the Slakh corpus, where a blank probe exploiting label frequency outperforms a feature-dependent probe. High absolute accuracy is not evidence. The zero-feature gap is the only meaningful diagnostic here.
+The excluded axes require a different reading. Instrument micro-F1 is 0.791 while the zero-feature baseline is 0.835 — the baseline is *higher*. Meter accuracy is 0.783 versus 0.855. These are not failures of S_plan. They are attributes dominated by common-class and common-meter priors in the Slakh corpus. High absolute accuracy is not evidence. The zero-feature gap is the only meaningful diagnostic here.
 
 RQ3 receives a qualified positive answer: S_plan encodes key and pitch-class structure well above the prior baseline. Meter and instrument micro-F1 are excluded until label-shuffle controls confirm feature-specific learning.
 
 ---
 
-## Slide 13 — RQ3: Axis Safety
+## Slide 17 — RQ3: Axis Safety
 
 This table formalizes the claim boundary for each MIR axis. Above the separator: weak key, pitch-class, and instrument macro-F1, where S_plan exceeds the zero-feature baseline. These are the paper-safe claims, always reported with the baseline gap, not as standalone numbers. Below the separator: instrument micro-F1 and meter accuracy, excluded entirely because the zero-feature baseline exceeds S_plan.
 
@@ -130,13 +152,13 @@ Two controls — label-shuffle and target-prior — are pending. The probing cla
 
 ---
 
-## Slide 14 — RQ3: Qualitative
+## Slide 18 — RQ3: Qualitative
 
 As a qualitative illustration, this slide shows the piano roll comparison for window 3 of Slakh track 01501, covering 90 to 120 seconds. Ground-truth MIDI is on the left; the pitch-region reconstruction from the S_plan codec is on the right. Binary accuracy is 1.000, MSE is 0.00130. The symbolic structure is reconstructed faithfully at this resolution.
 
 ---
 
-## Slide 15 — Design Constraint
+## Slide 19 — Design Constraint
 
 The positive RQ1 and RQ2 results depend critically on the stream-native interface. Two preliminary comparisons demonstrate that naive alternatives fail, and these failures are not incidental engineering obstacles — they are reproducible under controlled conditions.
 
@@ -148,7 +170,7 @@ Both results isolate the same root cause. Symbolic tokens must enter through the
 
 ---
 
-## Slide 16 — Limitations
+## Slide 20 — Limitations
 
 Five limitations must be stated precisely.
 
@@ -164,7 +186,7 @@ Fifth, Slakh-only scope. All experiments use a synthesized paired audio-MIDI cor
 
 ---
 
-## Slide 17 — Conclusion
+## Slide 21 — Conclusion
 
 The paper's central claim is conservative but supported. S_plan is a compact symbolic codec with acoustic-token utility and recoverable music-structural content under controlled Slakh experiments.
 

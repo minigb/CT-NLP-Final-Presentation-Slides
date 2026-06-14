@@ -220,7 +220,147 @@
 \end{frame}
 
 % ----------------------------------------------------------------
-% 4 — CONTROLS
+% 4 — DATASET
+% ----------------------------------------------------------------
+\begin{frame}{Dataset: Slakh2100 — Synthesized Paired Audio-MIDI}
+
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      {\small
+      \begin{tabular}{p{2.2cm}rr}
+        \toprule
+        \textbf{Split} & \textbf{Tracks} & \textbf{Windows} \\
+        \midrule
+        Train      & 1{,}289 & 11{,}279 \\
+        Validation &     270 &  2{,}334 \\
+        Test       &     151 &  1{,}385 \\
+        \bottomrule
+      \end{tabular}}
+
+      \vspace{0.25cm}
+      {\footnotesize
+      \begin{itemize}\setlength{\itemsep}{2pt}
+        \item Synthesized with professional-grade sample-based virtual instruments
+        \item Track-level split \emph{before} windowing — no phrase contamination
+        \item Each window: 30 s audio + ground-truth aligned MIDI
+        \item All CE results in this talk are on the held-out \textbf{test} set
+      \end{itemize}}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{center}
+        \includegraphics[width=\textwidth,height=0.52\textheight,keepaspectratio]%
+          {pianoroll_track01501_w000_target.png}
+        {\footnotesize\color{Muted} Example 30 s piano roll — Slakh track 01501}
+      \end{center}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ----------------------------------------------------------------
+% 5 — MIDI FEATURE EXTRACTION
+% ----------------------------------------------------------------
+\begin{frame}{Method: MIDI Feature Extraction — 53-Dim Frame Vector}
+  \framesubtitle{Extracted at 100 ms resolution from ground-truth MIDI}
+
+  {\small
+  \begin{tabular}{p{3.5cm}p{1.2cm}p{7.0cm}}
+    \toprule
+    \textbf{Feature group} & \textbf{Dims} & \textbf{Content} \\
+    \midrule
+    Binary features & 41 & Instrument-class presence (34 Slakh classes),
+                           pitch-class activation (12), beat/downbeat phase \\
+    Continuous features & 12 & Instantaneous tempo (BPM), note density (events/s),
+                               polyphony count, energy proxy \\
+    \midrule
+    \textbf{Frame vector} & \textbf{53} & Normalized per-dimension;
+                                          $\approx\!300$ frames per 30 s window \\
+    \bottomrule
+  \end{tabular}}
+
+  \smallskip
+  \begin{tcolorbox}[key]
+    MIDI features are extracted from the \emph{ground-truth} MIDI file, not transcribed
+    from audio. The 300-frame sequence is compressed by the codec encoder to a fixed
+    \textbf{30 frames} — one frame per second of audio.
+  \end{tcolorbox}
+\end{frame}
+
+% ----------------------------------------------------------------
+% 6 — CODEC ARCHITECTURE
+% ----------------------------------------------------------------
+\begin{frame}{Method: \splan{} RVQ Codec Architecture}
+
+  \begin{center}
+  \begin{tikzpicture}[
+    box/.style={draw=Blue,fill=LBlue,rounded corners=4pt,
+                minimum height=1.0cm,minimum width=3.2cm,
+                align=center,font=\small\bfseries},
+    gbox/.style={draw=Green,fill=Green!10,rounded corners=4pt,
+                 minimum height=1.0cm,minimum width=3.8cm,
+                 align=center,font=\small\bfseries\color{Green!70!black}},
+    arr/.style={-{Stealth[scale=1.0]},thick,color=Blue},
+    lbl/.style={font=\footnotesize\color{Muted},align=center},
+  ]
+    \node[box]  (enc) {Encoder\\{\footnotesize 2-layer 1D CNN + pooling}};
+    \node[gbox, right=1.6cm of enc] (rvq) {\splan{} RVQ\\{\footnotesize 4 stages $\times$ 512 codes}};
+    \node[box,  right=1.6cm of rvq] (dec) {Decoder\\{\footnotesize symm.\ 1D CNN}};
+
+    \draw[arr] (enc) -- (rvq);
+    \draw[arr] (rvq) -- (dec);
+
+    \node[lbl, above=0.15cm of enc] {Input: $53 \times 300$ frames};
+    \node[lbl, above=0.15cm of rvq] {$4 \times 30$ discrete tokens};
+    \node[lbl, above=0.15cm of dec] {Recon: $53 \times 300$ frames};
+    \node[lbl, below=0.15cm of enc] {var.\ len $\to$ \textbf{30 fr}};
+  \end{tikzpicture}
+  \end{center}
+
+  \vspace{0.2cm}
+  {\small
+  \begin{tabular}{p{3.0cm}p{9.2cm}}
+    \midrule
+    Encoder & 2-layer 1D CNN + temporal pooling; maps variable-length input to 30 frames \\
+    Codebook & 4 RVQ stages, 512 codes each; EMA updates + codebook restart \\
+    Training loss & BCE for binary dims + MSE for continuous dims; 42{,}000 steps \\
+    \midrule
+  \end{tabular}}
+
+  \vspace{2pt}
+  {\footnotesize\color{Muted}%
+   $4{\times}30 = 120$ tokens per window. Same RVQ format as $C_a$ — stream-native positional encoding.}
+\end{frame}
+
+% ----------------------------------------------------------------
+% 7 — TRAINING SETUP
+% ----------------------------------------------------------------
+\begin{frame}{Experiment Setup: LoRA Fine-tuning with Learned Gate}
+
+  {\small
+  \begin{tabular}{p{3.5cm}p{8.5cm}}
+    \toprule
+    \textbf{Component} & \textbf{Configuration} \\
+    \midrule
+    Base model & UniAudio 2.0 (frozen weights) \\
+    Adapters & LoRA on 140 attention modules \\
+    Trainable params & ${\sim}10.8$M (reason-only)\quad${\sim}253$M (symbolic variants) \\
+    Symbolic gate & Learned scalar; controls \splan{} influence on $C_a$ prediction \\
+    \midrule
+    \multicolumn{2}{l}{\textit{Hardened four-condition comparison (primary result)}} \\
+    \midrule
+    Steps / batch & 800 steps; batch 1 + gradient accumulation 16 \\
+    Learning rates & LoRA $10^{-5}$ \ / \ symbolic $3\!\times\!10^{-4}$ \ / \ gate $2\!\times\!10^{-3}$ \\
+    Seed & Fixed; all four conditions identical except stream variant \\
+    \bottomrule
+  \end{tabular}}
+
+  \smallskip
+  \smallskip
+  {\footnotesize\color{Muted} Gate $\approx 0$: model ignores \splan{}.\ Gate $> 0$: symbolic stream admitted to $C_a$ prediction.
+  Primary result: aligned 0.177 $>$ shuffled 0.167 $>$ dummy 0.163.}
+\end{frame}
+
+% ----------------------------------------------------------------
+% 8 — CONTROLS
 % ----------------------------------------------------------------
 \begin{frame}{Evaluation Protocol: Every Comparison Uses All Four Conditions}
 
@@ -626,30 +766,5 @@
   \end{tcolorbox}
 \end{frame}
 
-\begin{frame}{Backup: Dataset — Slakh2100}
-  \framesubtitle{Paired audio and MIDI, track-level split}
-
-  {\small
-  \begin{tabular}{p{2.0cm}rrl}
-    \toprule
-    \textbf{Split} & \textbf{Tracks} & \textbf{Windows} & \textbf{Notes} \\
-    \midrule
-    Train      & 1{,}289 & 11{,}279 & Track-level split before windowing \\
-    Validation & 270     & 2{,}334  & Zero track overlap with train \\
-    Test       & 151     & 1{,}385  & Held-out; never seen during training \\
-    \bottomrule
-  \end{tabular}}
-
-  \smallskip
-  Track-level splitting prevents musical phrases from appearing in both train and test.
-  All cross-entropy numbers in this presentation are on the held-out \textbf{test set}
-  unless labelled ``valid''.
-
-  \smallskip
-  \begin{tcolorbox}[key]
-    All four conditions in every comparison use the same audio-MIDI windows and split.
-    No experiment uses data outside Slakh.
-  \end{tcolorbox}
-\end{frame}
 
 \end{document}
