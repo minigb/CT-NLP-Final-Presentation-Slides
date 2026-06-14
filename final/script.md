@@ -86,7 +86,7 @@ The heatmap shows a representative reconstruction. Rows are feature dimensions �
 
 ---
 
-## Slide 12 — RQ1: Proxy Task
+## Slide 12 — RQ1: Acoustic Utility / Proxy Task
 
 The first evidence for RQ1 comes from a proxy prediction task. A small transformer head is trained to predict C_a tokens from frozen R_a plus symbolic representations, over 5,000 steps on 1,385 held-out test windows.
 
@@ -96,7 +96,7 @@ At this point, this is still a proxy setup with a frozen codec. The full end-to-
 
 ---
 
-## Slide 13 — RQ1: Stream-Native
+## Slide 13 — RQ1: Acoustic Utility / Stream-Native
 
 The full three-stream layout — R_a → S_plan → C_a — is then evaluated with streams aligned to the base model's positional encoding, under a shorter warmup budget of 3,000 steps.
 
@@ -106,7 +106,7 @@ The positive gap replicates in a setup that is architecturally distinct from the
 
 ---
 
-## Slide 14 — RQ1: Primary Result
+## Slide 14 — RQ1: Acoustic Utility / Primary Result
 
 The primary evaluation runs all four conditions under fully identical hyperparameters, differing only in the symbolic stream variant.
 
@@ -116,7 +116,7 @@ The learned gate corroborates through an independent channel: the model opens th
 
 ---
 
-## Slide 15 — RQ2: Alignment Decomposition
+## Slide 15 — RQ2: Alignment Specificity
 
 RQ2 requires demonstrating that the gain is not explained by token capacity alone.
 
@@ -128,7 +128,7 @@ The gate provides independent corroboration. RQ2 is answered positively: the ali
 
 ---
 
-## Slide 16 — RQ3: MIR Probing
+## Slide 16 — RQ3: Music-Structural Content / MIR Probing
 
 For RQ3, linear probing heads are trained on frozen S_plan embeddings to recover music-structural attributes. The evaluation compares against a zero-feature baseline — inputs zeroed, with only the head bias and BatchNorm statistics available — which exposes dataset priors. The reliable axes should exceed this bar.
 
@@ -140,7 +140,7 @@ RQ3 receives a qualified positive answer: S_plan encodes key and pitch-class str
 
 ---
 
-## Slide 17 — RQ3: Supported Axes
+## Slide 17 — RQ3: Music-Structural Content / Supported Axes
 
 This table summarizes the support by MIR axis. Weak key has the strongest support, pitch-class shows a positive feature-specific signal, and instrument macro-F1 is positive but sensitive to class imbalance. Instrument micro-F1 and meter accuracy are prior-dominated because the zero-feature baseline is higher.
 
@@ -148,7 +148,7 @@ The important habit is to report each axis with its zero-feature gap. Absolute a
 
 ---
 
-## Slide 18 — RQ3: Qualitative
+## Slide 18 — RQ3: Music-Structural Content / Qualitative
 
 As a qualitative illustration, this slide shows the piano roll comparison for window 3 of Slakh track 01501, covering 90 to 120 seconds. Ground-truth MIDI is on the left; the pitch-region reconstruction from the S_plan codec is on the right. Binary accuracy is 1.000, MSE is 0.00130. The symbolic structure is reconstructed faithfully at this resolution.
 

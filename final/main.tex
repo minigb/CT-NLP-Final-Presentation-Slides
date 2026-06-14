@@ -408,8 +408,8 @@
 % ----------------------------------------------------------------
 % 7 — RQ1: PROXY TASK
 % ----------------------------------------------------------------
-\begin{frame}{RQ1 — First Positive Signal: Proxy Prediction Task}
-  \framesubtitle{Frozen codec + proxy head; 5{,}000 steps, 1{,}385 test windows}
+\begin{frame}{RQ1: Does \splan{} reduce acoustic-token uncertainty?}
+  \framesubtitle{Proxy prediction task: frozen codec + proxy head; 5{,}000 steps}
 
   {\small
   \begin{tabular}{p{4.0cm}ccc}
@@ -437,8 +437,8 @@
 % ----------------------------------------------------------------
 % 8 — RQ1: STREAM-NATIVE
 % ----------------------------------------------------------------
-\begin{frame}{RQ1 — Replication: Stream-Native Interface Confirms the Gain}
-  \framesubtitle{Full $R_a \to S_{\mathrm{plan}} \to C_a$ layout with matched positional encoding}
+\begin{frame}{RQ1: Does \splan{} reduce acoustic-token uncertainty?}
+  \framesubtitle{Stream-native integration: full $R_a \to S_{\mathrm{plan}} \to C_a$ layout}
 
   {\small
   \begin{tabular}{p{4.0cm}ccc}
@@ -464,8 +464,8 @@
 % ----------------------------------------------------------------
 % 9 — RQ1: PRIMARY RESULT
 % ----------------------------------------------------------------
-\begin{frame}{RQ1 — Primary Result: Hardened Four-Condition Comparison}
-  \framesubtitle{All four conditions identical except stream variant — matched hyperparameters, fixed seed}
+\begin{frame}{RQ1: Does \splan{} reduce acoustic-token uncertainty?}
+  \framesubtitle{Primary result: hardened four-condition comparison}
 
   {\small
   \begin{tabular}{p{4.0cm}cccc}
@@ -492,9 +492,10 @@
 % ----------------------------------------------------------------
 % 10 — RQ2: DECOMPOSITION + CONSISTENCY
 % ----------------------------------------------------------------
-\begin{frame}{RQ2: The Gain Is Alignment-Specific, Not Token Capacity}
+\begin{frame}{RQ2: Is the benefit alignment-specific?}
+  \framesubtitle{Capacity effect vs.\ aligned-content effect}
 
-  {\footnotesize
+  {\footnotesize\renewcommand{\arraystretch}{1.0}
   \begin{tabular}{p{7.5cm}c}
     \toprule
     \textbf{Effect} & \textbf{$\Delta$ CE} \\
@@ -506,8 +507,8 @@
     \bottomrule
   \end{tabular}}
 
-  \smallskip
-  {\footnotesize
+  \vspace{2pt}
+  {\footnotesize\renewcommand{\arraystretch}{1.0}
   \begin{tabular}{p{4.5cm}cc}
     \toprule
     \textbf{Comparison} & \textbf{Steps} & \textbf{Aligned vs.\ shuffled} \\
@@ -518,8 +519,8 @@
     \bottomrule
   \end{tabular}}
 
-  \smallskip
-  \begin{tcolorbox}[good]
+  \vspace{2pt}
+  \begin{tcolorbox}[good,top=2pt,bottom=2pt,fontupper=\footnotesize]
     \textbf{RQ2 answered positively.} The direction is consistent across independent comparisons.
     Corroborated by gate: aligned 0.177 $>$ shuffled 0.167 $>$ dummy 0.163.
   \end{tcolorbox}
@@ -528,7 +529,8 @@
 % ----------------------------------------------------------------
 % 11 — RQ3: MIR PROBING
 % ----------------------------------------------------------------
-\begin{frame}{RQ3: Music Structure Is Recoverable from \splan{}}
+\begin{frame}{RQ3: Does \splan{} encode music-structural content?}
+  \framesubtitle{MIR probing with a zero-feature baseline}
 
   {\small
   \begin{tabular}{p{4.0cm}cc}
@@ -557,7 +559,8 @@
 % ----------------------------------------------------------------
 % 12 — RQ3: AXIS SAFETY
 % ----------------------------------------------------------------
-\begin{frame}{RQ3: Which Axes Are Supported?}
+\begin{frame}{RQ3: Does \splan{} encode music-structural content?}
+  \framesubtitle{Supported axes and prior-dominated axes}
 
   {\footnotesize\renewcommand{\arraystretch}{0.88}
   \begin{tabular}{p{3.0cm}p{2.2cm}p{6.5cm}}
@@ -580,8 +583,8 @@
 % ----------------------------------------------------------------
 % 13 — RQ3: QUALITATIVE FIGURE
 % ----------------------------------------------------------------
-\begin{frame}{RQ3: Qualitative — Reconstruction vs.\ Ground-Truth Piano Roll}
-  \framesubtitle{Slakh Track01501, window 3 (90–120 s) — binary acc 1.000, MSE 0.00130}
+\begin{frame}{RQ3: Does \splan{} encode music-structural content?}
+  \framesubtitle{Qualitative reconstruction: Slakh Track01501, window 3 (90–120 s)}
 
   \begin{center}
     \includegraphics[width=\textwidth,height=0.58\textheight,keepaspectratio]%
