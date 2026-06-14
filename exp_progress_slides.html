@@ -1,0 +1,930 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Symbolic-Fused LALM Experiment Progress</title>
+  <style>
+    :root {
+      --bg: #f7f7f3;
+      --ink: #171717;
+      --muted: #666a70;
+      --line: #d8d8d2;
+      --panel: #ffffff;
+      --accent: #315f7d;
+      --accent-soft: #e8f0f4;
+      --red: #c62828;
+      --red-soft: #f7e7e7;
+      --green-soft: #e8f1ea;
+      --mono: "SFMono-Regular", "Menlo", "Consolas", monospace;
+      --sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      background: #d9dad6;
+      color: var(--ink);
+      font-family: var(--sans);
+      font-size: 16px;
+      letter-spacing: 0;
+    }
+
+    body {
+      counter-reset: slide;
+    }
+
+    .deck {
+      width: 100%;
+    }
+
+    .slide {
+      position: relative;
+      width: 100vw;
+      min-height: 100vh;
+      padding: 4.2vh 5.2vw 4.8vh;
+      background: var(--bg);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      page-break-after: always;
+      counter-increment: slide;
+    }
+
+    .slide::after {
+      content: counter(slide, decimal-leading-zero);
+      position: absolute;
+      right: 4vw;
+      bottom: 2.8vh;
+      color: #8a8d91;
+      font-size: 0.82rem;
+      font-weight: 500;
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      text-transform: uppercase;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      margin-bottom: 1.1rem;
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      font-size: clamp(2.7rem, 5.6vw, 5.2rem);
+      line-height: 0.98;
+      max-width: 13ch;
+    }
+
+    h2 {
+      font-size: clamp(1.9rem, 3.3vw, 3.1rem);
+      line-height: 1.05;
+      max-width: 17ch;
+    }
+
+    h3 {
+      font-size: 1.08rem;
+      line-height: 1.2;
+      margin-bottom: 0.55rem;
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1.03rem;
+      line-height: 1.42;
+      max-width: 78ch;
+    }
+
+    .lead {
+      margin-top: 1.35rem;
+      font-size: clamp(1.22rem, 1.7vw, 1.55rem);
+      line-height: 1.32;
+      color: #303236;
+      max-width: 57ch;
+    }
+
+    .small {
+      font-size: 0.82rem;
+      line-height: 1.36;
+    }
+
+    .tiny {
+      font-size: 0.72rem;
+      line-height: 1.28;
+    }
+
+    .mt {
+      margin-top: 1.4rem;
+    }
+
+    .mt-lg {
+      margin-top: 2.2rem;
+    }
+
+    .grid {
+      display: grid;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .grid.two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .grid.three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .grid.four {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 1rem;
+      min-height: 100%;
+    }
+
+    .card.accent {
+      background: var(--accent-soft);
+      border-color: #cbdbe3;
+    }
+
+    .card.warn {
+      background: var(--red-soft);
+      border-color: #ecc2c2;
+    }
+
+    .card.good {
+      background: var(--green-soft);
+      border-color: #c8dacd;
+    }
+
+    .label {
+      display: inline-block;
+      margin-bottom: 0.55rem;
+      padding: 0.24rem 0.42rem;
+      border-radius: 4px;
+      color: var(--accent);
+      background: var(--accent-soft);
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .red,
+    .missing {
+      color: var(--red);
+      font-weight: 700;
+    }
+
+    code {
+      font-family: var(--mono);
+      font-size: 0.88em;
+      background: #eeeeea;
+      padding: 0.08rem 0.22rem;
+      border-radius: 3px;
+    }
+
+    ul {
+      margin: 0.8rem 0 0 1.05rem;
+      padding: 0;
+      color: #313337;
+      line-height: 1.35;
+    }
+
+    li {
+      margin: 0.38rem 0;
+      padding-left: 0.1rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1.1rem;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      overflow: hidden;
+      font-size: 0.82rem;
+      line-height: 1.25;
+    }
+
+    th,
+    td {
+      padding: 0.5rem 0.58rem;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: #24272b;
+      background: #ecece7;
+      font-weight: 700;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .metric {
+      color: var(--accent);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .foot {
+      position: absolute;
+      left: 5.2vw;
+      bottom: 2.6vh;
+      color: #8a8d91;
+      font-size: 0.76rem;
+    }
+
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(10, minmax(0, 1fr));
+      gap: 0.45rem;
+      margin-top: 2rem;
+    }
+
+    .step {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 0.7rem 0.55rem;
+      min-height: 7.5rem;
+    }
+
+    .step strong {
+      display: block;
+      color: var(--accent);
+      font-size: 0.86rem;
+      margin-bottom: 0.45rem;
+    }
+
+    .step span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.72rem;
+      line-height: 1.22;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 0.95fr 1.2fr;
+      gap: 1.2rem;
+      align-items: start;
+      margin-top: 1.4rem;
+    }
+
+    .quote {
+      border-left: 4px solid var(--accent);
+      padding-left: 1rem;
+      color: #303236;
+      font-size: 1.3rem;
+      line-height: 1.25;
+      max-width: 42ch;
+    }
+
+    .big-number {
+      font-size: 2.4rem;
+      color: var(--accent);
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    @media print {
+      body {
+        background: white;
+      }
+
+      .slide {
+        width: 13.333in;
+        height: 7.5in;
+        min-height: 7.5in;
+        padding: 0.42in 0.55in;
+        overflow: hidden;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .slide {
+        min-height: auto;
+        padding-bottom: 5rem;
+      }
+
+      .grid.two,
+      .grid.three,
+      .grid.four,
+      .split,
+      .timeline {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+<main class="deck">
+
+  <section class="slide">
+    <div class="eyebrow">Symbolic-Fused LALM Progress</div>
+    <h1>Symbolic-Aware Large Audio Language Models</h1>
+    <p class="lead">
+      Experiment journey toward a learned <code>S_plan</code> token for UniAudio-style audio language modeling.
+    </p>
+    <div class="grid three mt-lg">
+      <div class="card">
+        <span class="label">Goal</span>
+        <p>Learn compact symbolic tokens that carry music structure and help audio-token modeling.</p>
+      </div>
+      <div class="card">
+        <span class="label">Current status</span>
+        <p><code>S_plan</code> is a learned symbolic planning codec with acoustic-token utility and MIR-recoverable structure.</p>
+      </div>
+      <div class="card warn">
+        <span class="label">Not yet</span>
+        <p class="red">Not yet <code>S_LLM</code> LLM-supervised tokenizer training; not yet final LALM music reasoning.</p>
+      </div>
+    </div>
+    <p class="mt"><strong>Notation:</strong> <code>S_plan</code> is the current learned symbolic planning token; <code>S_LLM</code> is the planned LLM-supervised symbolic tokenizer/token stream and has not been trained yet.</p>
+    <div class="foot">Prepared for team research discussion | 2026-06-12</div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">One-sentence objective</div>
+    <h2>Make symbolic music useful inside an audio language model</h2>
+    <div class="split">
+      <div>
+        <p class="quote">
+          We test whether low-rate symbolic planning tokens can reduce acoustic-token uncertainty and expose recoverable music structure under controlled aligned-vs-corrupted comparisons.
+        </p>
+      </div>
+      <div class="grid two">
+        <div class="card good">
+          <h3>What we can say now</h3>
+          <ul>
+            <li>Frozen audio tokens contain recoverable MIR information.</li>
+            <li><code>S_plan</code> is compact and reconstructive.</li>
+            <li>Aligned <code>S_plan</code> improves proxy acoustic-token modeling.</li>
+            <li>MIR structure is recoverable from frozen <code>S_plan</code>.</li>
+          </ul>
+        </div>
+        <div class="card warn">
+          <h3>What we cannot claim yet</h3>
+          <ul>
+            <li>Full symbolic reasoning token.</li>
+            <li><code>S_LLM</code> LLM-supervised tokenizer training.</li>
+            <li>Robust final-LALM open-ended music QA.</li>
+            <li>Generation/control intervention success.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Experiment flow</div>
+    <h2>The logic is a ladder, not a score dump</h2>
+    <div class="timeline">
+      <div class="step"><strong>Baseline</strong><span>Frozen UniAudio QA is brittle; prompts and yes/no bias are unstable.</span></div>
+      <div class="step"><strong>Probes</strong><span>Audio tokens contain recoverable music information under controls.</span></div>
+      <div class="step"><strong>EXP020-23</strong><span>Raw MIDI is too long; low-rate symbolic summaries are feasible but limited.</span></div>
+      <div class="step"><strong>EXP024</strong><span>Learn compact RVQ <code>S_plan</code> codec.</span></div>
+      <div class="step"><strong>EXP025</strong><span>Aligned <code>S_plan</code> reduces semantic acoustic-token CE.</span></div>
+      <div class="step"><strong>EXP027</strong><span>Naive LALM row insertion fails.</span></div>
+      <div class="step"><strong>EXP028</strong><span>Adapter is non-destructive but gate is near zero.</span></div>
+      <div class="step"><strong>EXP029</strong><span>UniAudio-style symbolic stream gives small aligned-control gain.</span></div>
+      <div class="step"><strong>EXP030</strong><span>Build MIR/text target bank.</span></div>
+      <div class="step"><strong>EXP031</strong><span>MIR <code>S_plan</code> gate now; <code>S_LLM</code> tokenizer later.</span></div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Interactive demo companion</div>
+    <h2>Use a separate web demo for playable examples</h2>
+    <div class="grid three">
+      <div class="card">
+        <span class="label">Demo block 01</span>
+        <p>UniAudio 2.0 Audio / Speech Tasks.</p>
+      </div>
+      <div class="card">
+        <span class="label">Demo block 02</span>
+        <p>UniAudio 2.0 Music Tasks.</p>
+      </div>
+      <div class="card">
+        <span class="label">Demo block 03</span>
+        <p>Symbolic-Aware MIDI / Music Tasks.</p>
+      </div>
+    </div>
+    <div class="card accent mt-lg">
+      <p>
+        Demo link:
+        <a href="https://dabinkim0.github.io/symbolic-fused-lalm-experiments/demo/" target="_blank" rel="noreferrer">
+          https://dabinkim0.github.io/symbolic-fused-lalm-experiments/demo/
+        </a>
+      </p>
+      <p class="red">Claim boundary: final integrated LALM preservation, decoded generation, and <code>S_LLM</code> examples remain missing until those experiments are run.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Evidence gaps</div>
+    <h2>Where the logic is currently weak</h2>
+    <table>
+      <thead>
+        <tr><th>Missing / weak evidence</th><th>Why it matters</th><th>Next action</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="red">EXP031A controls incomplete</td>
+          <td>MIR recovery could be label priors or shortcut learning.</td>
+          <td>Complete <code>zero_features</code> and <code>label_shuffle</code>.</td>
+        </tr>
+        <tr>
+          <td class="red">No <code>S_LLM</code> tokenizer yet</td>
+          <td>Current <code>S_plan</code> is not language-trained through Llama/Qwen.</td>
+          <td>Run EXP031B only after controls pass.</td>
+        </tr>
+        <tr>
+          <td class="red">Instrument macro-F1 drops after step 375</td>
+          <td>Rare-instrument behavior needs calibration or class balancing.</td>
+          <td>Run threshold calibration before class-balanced BCE.</td>
+        </tr>
+        <tr>
+          <td class="red">Final LALM reasoning not proven</td>
+          <td>EXP029 gain is small and gate is tiny.</td>
+          <td>S2 LoRA/adapters after tokenizer controls.</td>
+        </tr>
+        <tr>
+          <td class="red">No generation intervention yet</td>
+          <td>Controllability remains an intended future contribution.</td>
+          <td>Later symbolic intervention suite.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Data protocol</div>
+    <h2>Controlled paired source: Slakh windows</h2>
+    <div class="grid three">
+      <div class="card">
+        <div class="big-number">11,279</div>
+        <p>train windows</p>
+      </div>
+      <div class="card">
+        <div class="big-number">2,334</div>
+        <p>valid windows</p>
+      </div>
+      <div class="card">
+        <div class="big-number">1,385</div>
+        <p>test windows</p>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Protocol choice</th><th>Setting</th><th>Why it matters</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Split unit</td><td>Track-level before windowing</td><td>Prevents leakage across windows from the same track.</td></tr>
+        <tr><td>Windowing</td><td>Non-overlapping 30-second windows</td><td>Matches symbolic/audio cache and later UniAudio-style streams.</td></tr>
+        <tr><td>Role</td><td>Controlled paired audio--MIDI source</td><td>Good for causal controls; not broad real-domain proof.</td></tr>
+      </tbody>
+    </table>
+    <p class="mt red">Missing: real-domain symbolic-token generalization remains future work.</p>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Why not start with QA?</div>
+    <h2>Frozen UniAudio2 QA is too brittle for the main claim</h2>
+    <div class="grid two">
+      <div class="card">
+        <span class="label">Diagnostic setup</span>
+        <ul>
+          <li>Released UniAudio2 stack.</li>
+          <li><code>ReasoningCodec.checkpoint + llm_ep2.checkpoint</code>.</li>
+          <li>Slakh test primary instrument-presence QA.</li>
+          <li>151 clips, 906 QA rows.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <span class="label">Observed behavior</span>
+        <ul>
+          <li>Exact accuracy <span class="metric">0.6181</span>.</li>
+          <li>Macro-F1 <span class="metric">0.3782</span>.</li>
+          <li>Strict invalid rate <span class="metric">0.3400</span>.</li>
+          <li>Predictions: 796 yes, 3 no, 107 invalid.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="mt">Discussion: this motivates structured token-level and MIR evaluations with objective labels and controls.</p>
+    <p class="mt red">Missing: robust open-ended music QA is not yet a completed claim.</p>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Representation motivation</div>
+    <h2>Audio tokens already carry music information</h2>
+    <div class="split">
+      <div>
+        <p>Frozen-token MIR probes asked whether reason and semantic tokens encode recoverable instrument and structure labels.</p>
+        <p class="mt">These probes are not the final contribution, but they justify token-level evaluation before symbolic fusion.</p>
+      </div>
+      <div class="card">
+        <span class="label">Design lesson</span>
+        <ul>
+          <li>Use token-level information recovery.</li>
+          <li>Keep label-shuffle and feature-shuffle controls.</li>
+          <li>Avoid relying only on final free-form QA.</li>
+          <li>Preserve track-level splits and metadata provenance.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Symbolic token ladder</div>
+    <h2>Why a learned compact token was necessary</h2>
+    <table>
+      <thead>
+        <tr><th>Representation</th><th>Budget / statistic</th><th>Interpretation</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Raw REMI+ / Octuple / CPWord</td>
+          <td>Raw means: 2,978 / 5,575 / 7,857 tokens per 30s</td>
+          <td>Too long; mostly tests truncation rather than reasoning.</td>
+        </tr>
+        <tr>
+          <td>REMI+BPE pilot</td>
+          <td>Mean 1,157, p95 2,228 tokens; 88.8% over 480-token budget</td>
+          <td>Compression helps but remains too long.</td>
+        </tr>
+        <tr>
+          <td>Low-rate rule summary</td>
+          <td>About 149 tokens per 30s; 0.0% truncation</td>
+          <td>Feasible rule baseline but limited expressivity.</td>
+        </tr>
+        <tr>
+          <td>Learned <code>S_plan</code></td>
+          <td>120 tokens per 30s, 4 RVQ streams</td>
+          <td>Compact learned symbolic planning codec.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="mt">Design pivot: from "append MIDI tokens" to "learn low-rate symbolic planning tokens."</p>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">EXP024</div>
+    <h2>Learned <code>S_plan</code> reconstruction RVQ codec</h2>
+    <div class="grid two">
+      <div class="card">
+        <h3>Objective</h3>
+        <p>Train a compact symbolic autoencoder from MIDI-derived feature tensors and emit four RVQ symbolic streams.</p>
+        <h3 class="mt">Config</h3>
+        <ul>
+          <li>30 frames per 30-second window.</li>
+          <li>Transformer encoder/decoder.</li>
+          <li>Hidden 512, latent 256.</li>
+          <li>4 codebooks x 1024 entries.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Step 42,000 validation</h3>
+        <table>
+          <tbody>
+            <tr><td>Valid reconstruction loss</td><td class="metric">0.00918</td></tr>
+            <tr><td>Binary accuracy</td><td class="metric">0.99777</td></tr>
+            <tr><td>Continuous MSE</td><td class="metric">0.00172</td></tr>
+            <tr><td>Codebook usage</td><td class="metric">0.31 / 0.72 / 0.81 / 0.81</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <p class="mt red">Interpretation boundary: reconstruction proves a feasible codec, not a language-grounded reasoning token.</p>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">EXP025</div>
+    <h2>First strong positive: acoustic-token utility</h2>
+    <p>Question: does fixed <code>S_plan</code> reduce uncertainty about UniAudio2 semantic acoustic tokens <code>C_a</code>?</p>
+    <table>
+      <thead>
+        <tr><th>Condition</th><th>Valid CE</th><th>Test CE</th><th>Test PPL</th><th>Interpretation</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>reason_only</code></td><td>7.5650</td><td>7.6573</td><td>2116.06</td><td>Audio-token baseline</td></tr>
+        <tr><td><code>lowrate</code></td><td>7.5534</td><td>7.6445</td><td>2089.16</td><td>Small rule-symbolic gain</td></tr>
+        <tr><td><code>lowrate_shuffled</code></td><td>7.5697</td><td>7.6598</td><td>2121.42</td><td>Temporal mismatch hurts</td></tr>
+        <tr><td>aligned <code>S_plan</code></td><td class="metric">7.5073</td><td class="metric">7.5963</td><td class="metric">1990.88</td><td>Best proxy result</td></tr>
+        <tr><td>shuffled <code>S_plan</code></td><td>7.5376</td><td>7.6307</td><td>2060.58</td><td>Corrupted control worse</td></tr>
+      </tbody>
+    </table>
+    <p class="mt">Discussion: this supports symbolic acoustic utility, but remains a proxy task rather than final LALM reasoning.</p>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">EXP027</div>
+    <h2>Naive LALM insertion failed, and that matters</h2>
+    <div class="split">
+      <div>
+        <p>We inserted <code>S_plan</code> rows into the released UniAudio2 LALM path and trained LoRA plus symbolic embedding/projection.</p>
+        <p class="mt">The goal was to test the simplest route: "just give the LALM symbolic rows."</p>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Condition</th><th>Test CE</th><th>Test PPL</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>reason_only</code></td><td class="metric">5.3598</td><td class="metric">212.67</td></tr>
+          <tr><td>aligned <code>S_plan</code></td><td>5.5113</td><td>247.48</td></tr>
+          <tr><td>shuffled <code>S_plan</code></td><td>5.5119</td><td>247.63</td></tr>
+          <tr><td>dummy tokens</td><td>5.5100</td><td>247.16</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="mt">Discussion: aligned, shuffled, and dummy are nearly indistinguishable. The problem shifted from "learn symbolic tokens" to "design an interface the LALM can use."</p>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">EXP028</div>
+    <h2>Adapter path was stable, but not yet symbolic usage</h2>
+    <table>
+      <thead>
+        <tr><th>Condition</th><th>Valid CE</th><th>Valid PPL</th><th>Valid Acc.</th><th>Interpretation</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>reason-only LoRA reference</td><td class="metric">5.4183</td><td class="metric">225.50</td><td>0.1389</td><td>Healthy reference</td></tr>
+        <tr><td>LoRA + symbolic adapter</td><td class="red">7.8022</td><td class="red">2445.86</td><td class="red">0.0284</td><td>Destabilized interface</td></tr>
+        <tr><td>LoRA-frozen tiny-gate adapter</td><td>5.4116</td><td>224.00</td><td>0.1391</td><td>Non-destructive warm-start</td></tr>
+      </tbody>
+    </table>
+    <div class="card warn mt">
+      <p>Missing claim: adapter gate around <span class="red">3.36e-4</span> and delta ratio around <span class="red">1e-6</span>, so this does not prove symbolic information is used.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">EXP029 architecture</div>
+    <h2>Redesign: UniAudio-style symbolic streams</h2>
+    <div class="grid four">
+      <div class="card">
+        <span class="label">Streams</span>
+        <p>8 audio + 4 symbolic RVQ + 1 text</p>
+      </div>
+      <div class="card">
+        <span class="label">Order</span>
+        <p><code>R_a -> S_plan -> C_a</code></p>
+      </div>
+      <div class="card">
+        <span class="label">Length</span>
+        <p>151 reason + 30 symbolic + 376 semantic = 557 frames</p>
+      </div>
+      <div class="card">
+        <span class="label">Sanity</span>
+        <p>0 failed samples, 0.0% truncation, 0.0% bad-position rate</p>
+      </div>
+    </div>
+    <p class="mt">S1 warm-up trains only the symbolic stream embedding/expert/gate under a frozen released UniAudio2 checkpoint.</p>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">EXP029 result</div>
+    <h2>Small but clean aligned-control gain</h2>
+    <table>
+      <thead>
+        <tr><th>Condition</th><th>Valid CE</th><th>Test CE</th><th>Valid Acc.</th><th>Test Acc.</th><th>Gate</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>aligned <code>splan_stream</code></td><td class="metric">5.7192</td><td class="metric">5.7663</td><td class="metric">0.1171</td><td class="metric">0.1097</td><td>0.00327</td></tr>
+        <tr><td>shuffled</td><td>5.7410</td><td>5.7847</td><td>0.1134</td><td>0.1067</td><td>0.00319</td></tr>
+        <tr><td>dummy</td><td>5.7398</td><td>5.7852</td><td>0.1136</td><td>0.1068</td><td>0.00335</td></tr>
+      </tbody>
+    </table>
+    <table>
+      <thead>
+        <tr><th>Prefix metric</th><th>Aligned</th><th>Shuffled</th><th>Dummy</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Test prefix-8 CE</td><td class="metric">5.9820</td><td>6.0002</td><td>6.0034</td></tr>
+        <tr><td>Test prefix-32 CE</td><td class="metric">6.1028</td><td>6.1183</td><td>6.1191</td></tr>
+      </tbody>
+    </table>
+    <p class="mt red">Still missing: S2 LoRA/adapters to test whether the aligned-control gap persists under stronger LALM adaptation.</p>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">EXP030</div>
+    <h2>MIR/Text target bank for supervised tokenizer stages</h2>
+    <table>
+      <thead>
+        <tr><th>Split</th><th>Tracks</th><th>Windows</th><th>Failures</th><th>Stored / total events</th><th>LLM examples</th><th>QA examples</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Train</td><td>1,289</td><td>11,279</td><td>0</td><td>2,702,487 / 7,748,891</td><td>89,630</td><td>67,072</td></tr>
+        <tr><td>Valid</td><td>270</td><td>2,334</td><td>0</td><td>558,129 / 1,624,178</td><td>18,517</td><td>13,849</td></tr>
+        <tr><td>Test</td><td>151</td><td>1,385</td><td>0</td><td>333,511 / 911,634</td><td>11,012</td><td>8,242</td></tr>
+      </tbody>
+    </table>
+    <div class="grid two">
+      <div class="card">
+        <h3>What it provides</h3>
+        <p>Stem metadata, exact symbolic labels where available, global MIR summaries, segment summaries, beat/bar grounding, deterministic captions, and symbolic QA.</p>
+      </div>
+      <div class="card">
+        <h3>Why it matters</h3>
+        <p>EXP030 separates exact facts from weak/estimated key/chord labels, allowing cleaner EXP031 supervision and honest claims.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">EXP031A</div>
+    <h2>MIR-supervised <code>S_plan</code> gate</h2>
+    <div class="grid two">
+      <div class="card">
+        <h3>Objective</h3>
+        <p>Audit whether frozen <code>S_plan</code> preserves recoverable symbolic music structure beyond reconstruction metrics.</p>
+        <p class="mt red">Not <code>S_LLM</code> LLM-supervised tokenizer training.</p>
+      </div>
+      <div class="card">
+        <h3>Config</h3>
+        <ul>
+          <li>EXP024 autoencoder initialized and effectively frozen.</li>
+          <li>Batch size 4096, max steps 625.</li>
+          <li>Eval every 125, save every 250.</li>
+          <li>Heads: instruments, pitch class, numeric MIR, meter, weak key/chord, segment density/polyphony.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">EXP031A result</div>
+    <h2>Broad MIR structure improves through step 625</h2>
+    <table>
+      <thead>
+        <tr><th>Split / step</th><th>Loss</th><th>Inst macro</th><th>Inst micro</th><th>PC macro</th><th>Meter</th><th>Weak key</th><th>Seg density</th><th>Seg polyphony</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Valid 375</td><td>8.6298</td><td class="metric">0.5284</td><td>0.7172</td><td>0.8118</td><td>0.5321</td><td>0.3492</td><td>0.7074</td><td>0.6322</td></tr>
+        <tr><td>Valid 625</td><td class="metric">6.5229</td><td>0.4986</td><td class="metric">0.8047</td><td class="metric">0.8514</td><td class="metric">0.7661</td><td class="metric">0.5484</td><td class="metric">0.8873</td><td class="metric">0.7697</td></tr>
+        <tr><td>Test 625</td><td>6.6153</td><td>0.5014</td><td>0.7908</td><td>0.8541</td><td>0.7834</td><td>0.5567</td><td>0.8743</td><td>0.7614</td></tr>
+        <tr><td>Test 375</td><td>8.6788</td><td class="metric">0.5143</td><td>0.7022</td><td>0.8124</td><td>0.5899</td><td>0.3776</td><td>0.7019</td><td>0.6297</td></tr>
+      </tbody>
+    </table>
+    <p class="mt">Interpretation: 625 is best overall; 375 is better only for instrument macro-F1. The macro drop looks like threshold/class imbalance, not representation collapse.</p>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">EXP031A controls</div>
+    <h2>The next claim-critical missing evidence</h2>
+    <table>
+      <thead>
+        <tr><th>Missing evidence</th><th>Question answered</th><th>Current status</th><th>Next action</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="red">Zero-feature control</td><td>Do MIR heads rely on priors/head bias?</td><td class="red">Partial train-only snapshot; no valid/test yet</td><td>Complete B4096/S625 run</td></tr>
+        <tr><td class="red">Label-shuffle control</td><td>Does feature-target alignment matter?</td><td class="red">Not run</td><td>Run same B4096/S625 setup</td></tr>
+        <tr><td class="red">Threshold calibration</td><td>Is macro-F1 drop fixed-threshold calibration?</td><td class="red">Not run</td><td>Post-hoc per-class valid thresholds</td></tr>
+        <tr><td class="red">Class-balanced BCE</td><td>Does rare-instrument weighting help?</td><td class="red">Not run</td><td>Only after controls/calibration</td></tr>
+        <tr><td class="red">EXP031B <code>S_LLM</code> supervision</td><td>Can an LLM decoder make tokens language-readable?</td><td class="red">Not run</td><td>After controls pass</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">EXP031B</div>
+    <h2>What <code>S_LLM</code> tokenization with LLM will actually mean</h2>
+    <div class="grid two">
+      <div class="card">
+        <h3>Planned objective</h3>
+        <p>Train planned <code>S_LLM</code> tokens through a separate text decoder on deterministic MIR captions, symbolic QA, and structured music text targets.</p>
+      </div>
+      <div class="card">
+        <h3>Planned setup</h3>
+        <ul>
+          <li>Llama-3.2-compatible token-training decoder.</li>
+          <li>300M-scale debug/ablation first.</li>
+          <li>3B-compatible faithful check later.</li>
+          <li>Qwen2.5/Qwen3 as cross-family ablation.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card warn mt">
+      <p><span class="red">Planned, not yet run.</span> EXP031B <code>S_LLM</code> should wait until EXP031A controls establish that aligned <code>S_plan</code> carries causal structure.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Current paper story</div>
+    <h2>If controls pass, the story is clean</h2>
+    <div class="card accent">
+      <p class="quote">
+        We learn a compact symbolic planning token from MIDI-derived structure, show that it reduces acoustic-token uncertainty beyond corrupted symbolic controls, show that naive LALM insertion fails, introduce a UniAudio-style symbolic stream interface with aligned-control gains, and verify through MIR-supervised controls that the symbolic bottleneck preserves recoverable music structure.
+      </p>
+    </div>
+    <div class="grid two">
+      <div class="card mt">
+        <h3>Contribution shape</h3>
+        <ul>
+          <li>Tokenizer design: compact symbolic planning codec.</li>
+          <li>Utility evidence: acoustic-token CE/PPL reductions.</li>
+          <li>Interface evidence: UniAudio-style stream controls.</li>
+          <li>Representation evidence: MIR-supervised recovery.</li>
+        </ul>
+      </div>
+      <div class="card warn mt">
+        <h3>If controls fail</h3>
+        <p>Then the story narrows: current <code>S_plan</code> is useful as reconstruction/acoustic proxy, but MIR recovery may involve priors or shortcuts. The planned <code>S_LLM</code> objective must be revised before LLM supervision.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Immediate next experiments</div>
+    <h2>Priority should follow the weakest logical link</h2>
+    <table>
+      <thead>
+        <tr><th>Priority</th><th>Experiment</th><th>Why now</th><th>Decision rule</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>P0</td><td><code>EXP031A zero_features</code></td><td>Tests priors/head bias.</td><td>Normal must strongly beat zero features.</td></tr>
+        <tr><td>P0</td><td><code>EXP031A label_shuffle</code></td><td>Tests feature-target alignment.</td><td>Normal must strongly beat shuffled labels.</td></tr>
+        <tr><td>P1</td><td>Threshold calibration</td><td>Explains instrument macro-F1 drop.</td><td>Macro improves without hurting broad MIR.</td></tr>
+        <tr><td>P1</td><td>Class-balanced BCE</td><td>Only if calibration is insufficient.</td><td>Rare-instrument macro improves, other metrics stable.</td></tr>
+        <tr><td>P2</td><td>EXP031B <code>S_LLM</code> tokenizer</td><td>Language-readable token training.</td><td>Start after controls pass.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Team handoff wording</div>
+    <h2>Use these terms consistently</h2>
+    <div class="grid two">
+      <div class="card good">
+        <h3>Say</h3>
+        <ul>
+          <li><code>S_plan</code> is a learned symbolic planning codec.</li>
+          <li>EXP031A is a MIR-supervised symbolic-token gate.</li>
+          <li>EXP031B is future <code>S_LLM</code> LLM-supervised tokenizer training.</li>
+          <li>EXP029 is a small positive stream-interface result.</li>
+          <li>Slakh is controlled paired evidence.</li>
+        </ul>
+      </div>
+      <div class="card warn">
+        <h3>Do not say yet</h3>
+        <ul>
+          <li><code>S_LLM</code> has already been trained.</li>
+          <li>EXP031A used Llama/Qwen token training.</li>
+          <li>EXP029 proves broad music reasoning.</li>
+          <li>Slakh-only results prove real-domain generalization.</li>
+          <li>Generation controllability is solved.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">End state</div>
+    <h2>What collaborators should remember</h2>
+    <div class="grid three">
+      <div class="card">
+        <span class="label">Done</span>
+        <p>Codec, acoustic utility proxy, negative insertion evidence, stream-interface gain, MIR-supervised baseline.</p>
+      </div>
+      <div class="card warn">
+        <span class="label">Missing</span>
+        <p>EXP031A controls, calibration, <code>S_LLM</code> LLM-supervised tokenizer training, stronger LALM adaptation, generation intervention.</p>
+      </div>
+      <div class="card accent">
+        <span class="label">Next</span>
+        <p>Complete <code>zero_features</code> and <code>label_shuffle</code> before moving to EXP031B.</p>
+      </div>
+    </div>
+    <p class="lead">The current research is strongest when framed as a careful controlled progression toward symbolic planning tokens, not as a finished symbolic reasoning LALM.</p>
+  </section>
+
+</main>
+</body>
+</html>

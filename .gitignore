@@ -1,0 +1,23 @@
+# TeX build artifacts
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.nav
+*.out
+*.run.xml
+*.snm
+*.synctex.gz
+*.toc
+*.vrb
+
+# Local editor/system files
+.DS_Store
+*.swp
+
+# Local Python caches
+__pycache__/
+*.py[cod]

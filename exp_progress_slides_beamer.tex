@@ -1,0 +1,696 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[scaled=0.95]{helvet}
+  \renewcommand{\familydefault}{\sfdefault}
+\else
+  \usepackage{fontspec}
+  \IfFontExistsTF{Helvetica Neue}{
+    \setsansfont{Helvetica Neue}
+    \setmainfont{Helvetica Neue}
+  }{
+    \setsansfont{TeX Gyre Heros}
+    \setmainfont{TeX Gyre Heros}
+  }
+  \IfFontExistsTF{Menlo}{\setmonofont{Menlo}}{\setmonofont{Latin Modern Mono}}
+\fi
+
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{amsmath}
+\usepackage{hyperref}
+
+\definecolor{deckbg}{HTML}{F7F7F3}
+\definecolor{deckink}{HTML}{171717}
+\definecolor{deckmuted}{HTML}{666A70}
+\definecolor{deckline}{HTML}{D8D8D2}
+\definecolor{deckaccent}{HTML}{315F7D}
+\definecolor{deckaccentsoft}{HTML}{E8F0F4}
+\definecolor{missingred}{HTML}{C62828}
+\definecolor{highlightyellow}{HTML}{FFF2B8}
+
+\setbeamercolor{background canvas}{bg=deckbg}
+\setbeamercolor{normal text}{fg=deckink}
+\setbeamercolor{frametitle}{fg=deckink}
+\setbeamercolor{title}{fg=deckink}
+\setbeamercolor{structure}{fg=deckaccent}
+\setbeamercolor{block title}{fg=deckink,bg=deckaccentsoft}
+\setbeamercolor{block body}{fg=deckink,bg=white}
+\setbeamercolor{yellowbox}{fg=deckink,bg=highlightyellow}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{itemize item}{\color{deckaccent}\small$\blacktriangleright$}
+\setbeamertemplate{itemize subitem}{\color{deckaccent}\scriptsize$\bullet$}
+\setbeamertemplate{frametitle}{
+  \vspace{0.25cm}
+  \insertframetitle\par
+  \vspace{0.08cm}
+  {\color{deckline}\rule{\linewidth}{0.4pt}}
+}
+\setbeamertemplate{footline}{
+  \leavevmode
+  \hbox{
+    \begin{beamercolorbox}[wd=.78\paperwidth,ht=2.4ex,dp=1ex,leftskip=0.55cm]{author in head/foot}
+      {\scriptsize\color{deckmuted}Symbolic-Fused LALM experiment progress}
+    \end{beamercolorbox}
+    \begin{beamercolorbox}[wd=.22\paperwidth,ht=2.4ex,dp=1ex,rightskip=0.55cm plus1fil]{date in head/foot}
+      {\scriptsize\color{deckmuted}\insertframenumber/\inserttotalframenumber}
+    \end{beamercolorbox}
+  }
+}
+
+\newcommand{\stage}[1]{{\color{deckaccent}\textbf{#1}}}
+\newcommand{\missing}[1]{{\color{missingred}\textbf{#1}}}
+\newcommand{\code}[1]{\texttt{\footnotesize #1}}
+\newcommand{\expfield}[2]{\textbf{#1:} #2\par\vspace{0.10cm}}
+\newenvironment{keybox}{%
+  \begin{beamercolorbox}[rounded=true,sep=0.14cm,wd=\linewidth]{yellowbox}\footnotesize%
+}{%
+  \end{beamercolorbox}%
+}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{R}{>{\raggedleft\arraybackslash}p{1.25cm}}
+\hypersetup{colorlinks=true,linkcolor=deckaccent,urlcolor=deckaccent}
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.12}
+
+\title{Symbolic-Aware Large Audio Language Models}
+\subtitle{Experiment progress and current evidence boundary for Symbolic-Fused LALMs}
+\author{Symbolic-Fused LALM Team}
+\date{June 13, 2026}
+
+\begin{document}
+
+\begin{frame}[plain]
+  \vspace{0.8cm}
+  {\Large\color{deckaccent}Experiment progress recap}\par
+  \vspace{0.4cm}
+  {\usebeamerfont{title}\Huge Symbolic-Aware Large Audio Language Models\par}
+  \vspace{0.45cm}
+  {\Large\color{deckmuted}A controlled path toward compact, interpretable symbolic streams for UniAudio-style audio-language modeling.}\par
+  \vfill
+  {\small\color{deckmuted}Source record: \code{doc/summary/260612\_exp\_journey\_key\_records.md}}
+\end{frame}
+
+\begin{frame}{Research Objective}
+  \large
+  Build a \stage{learned symbolic planning token}, \code{S\_plan}, that compresses MIDI-derived structure into a low-rate stream and can eventually condition a Large Audio-Language Model.
+
+  \vspace{0.55cm}
+  \begin{block}{Current conservative claim}
+    \code{S\_plan} is a compact symbolic codec with acoustic-token utility and MIR-recoverable structure under controlled Slakh experiments.
+  \end{block}
+
+  \vspace{0.18cm}
+  \begin{keybox}
+    \textbf{Notation boundary:} \code{S\_plan} denotes the current learned symbolic planning token. \code{S\_LLM} denotes the planned LLM-supervised symbolic tokenizer/token stream, and has not been trained yet.
+  \end{keybox}
+
+  \vspace{0.25cm}
+  \missing{Not yet claimed: \code{S\_LLM} training, robust final LALM reasoning, or controllable generation.}
+\end{frame}
+
+\begin{frame}{UniAudio2.0 Background}
+  \footnotesize
+  \expfield{Background}{All experiments in this deck are designed around the UniAudio2.0 formulation: a unified autoregressive audio-language model that uses ReasoningCodec to factorize audio into reasoning tokens and reconstruction/semantic acoustic tokens.}
+  \expfield{Why it matters here}{Our \code{S\_plan} stream is not a generic MIDI add-on. It is designed as a symbolic planning stream that can be compared against UniAudio2.0-style reasoning and semantic acoustic-token streams under aligned, shuffled, and dummy controls.}
+
+  \begin{keybox}
+    \textbf{Design consequence:} We keep the released UniAudio2.0 stack as the anchor and ask whether a compact learned symbolic stream provides additional music-structural information beyond the frozen audio-token baseline.
+  \end{keybox}
+\end{frame}
+
+\begin{frame}{UniAudio2.0 References}
+  \footnotesize
+  \expfield{Citation}{Yang, Wang, Chong, Liu, Wu, and Meng. ``UniAudio 2.0: A Unified Audio Language Model with Text-Aligned Factorized Audio Tokenization.'' arXiv:2602.04683, 2026.}
+
+  \begin{tabularx}{\linewidth}{p{2.6cm}Y}
+    \toprule
+    Resource & Link \\
+    \midrule
+    Paper & \href{https://arxiv.org/abs/2602.04683}{arxiv.org/abs/2602.04683} \\
+    Demo & \href{https://dongchaoyang.top/UniAudio2Demo/}{dongchaoyang.top/UniAudio2Demo} \\
+    Code & \href{https://github.com/yangdongchao/UniAudio2}{github.com/yangdongchao/UniAudio2} \\
+    Checkpoints & \href{https://huggingface.co/Dongchao/UniAudio2_ckpt}{huggingface.co/Dongchao/UniAudio2\_ckpt} \\
+    \bottomrule
+  \end{tabularx}
+
+  \vspace{0.22cm}
+  \begin{keybox}
+    \textbf{Presentation rule:} cite UniAudio2.0 at the beginning, then separate our claim: \code{S\_plan} is the current symbolic-planning stream; \code{S\_LLM} is planned and not trained yet.
+  \end{keybox}
+\end{frame}
+
+\begin{frame}{Interactive Web Demo Companion}
+  \footnotesize
+  \expfield{Purpose}{The Overleaf/Beamer deck cannot reliably play audio examples, so qualitative examples are organized as a separate web demo in the same style as task-oriented audio model demos.}
+  \expfield{Demo link}{\href{https://dabinkim0.github.io/symbolic-fused-lalm-experiments/demo/}{https://dabinkim0.github.io/symbolic-fused-lalm-experiments/demo/}}
+  \expfield{Demo sections}{(1) UniAudio2.0 Audio / Speech Tasks, (2) UniAudio2.0 Music Tasks, and (3) Symbolic-Aware MIDI / Music Tasks.}
+  \begin{keybox}
+    \textbf{Claim boundary:} The demo uses playable Slakh clips and current artifacts for \code{S\_plan}. It marks final integrated LALM preservation, decoded generation, and \code{S\_LLM} examples as missing until those experiments are actually run.
+  \end{keybox}
+\end{frame}
+
+\begin{frame}{Demo Update: Evidence Dashboard Structure}
+  \footnotesize
+  \expfield{Update objective}{The demo page was reorganized from a metric dump into an evidence dashboard that separates held-out aggregate results, validation case studies, and future generation slots.}
+
+  \begin{tabularx}{\linewidth}{p{2.45cm}Yp{3.2cm}}
+    \toprule
+    Demo block & What was added & Claim boundary \\
+    \midrule
+    UniAudio2.0 Audio / Speech & Released UniAudio2 baseline slots for TTS, text-to-sound, and instructed TTS & Preservation check only; no Symbolic-Aware generation checkpoint yet \\
+    UniAudio2.0 Music & EXP025 token utility and EXP029 stream-control evidence now separated from downstream claims & Mechanistic proxy, not decoded music improvement \\
+    Symbolic-Aware MIDI / Music & EXP024 feature-reconstruction gallery and EXP031A MIR task framing & Symbolic feature/MIR evidence, not MIDI transcription or audio generation \\
+    \bottomrule
+  \end{tabularx}
+
+  \vspace{0.2cm}
+  \begin{keybox}\textbf{Reading rule:} demo tables carry the quantitative claim; playable examples and piano-roll cards are illustrative case studies unless explicitly marked as held-out test evidence.\end{keybox}
+\end{frame}
+
+\begin{frame}{Experiment Ladder I: Diagnostics To \code{S\_plan}}
+  \footnotesize
+  \begin{tabularx}{\linewidth}{p{2.75cm}Yp{2.45cm}}
+    \toprule
+    Stage & Role in the contribution & Status \\
+    \midrule
+    Frozen UniAudio diagnostics & Establish baseline limits and avoid overclaiming QA & Completed diagnostic \\
+    Token-level MIR probes & Check whether released audio tokens contain recoverable music structure & Completed diagnostic \\
+    EXP020--023 & Audit symbolic representations and length/control constraints & Completed groundwork \\
+    EXP024 & Learn compact \code{S\_plan} RVQ codec & Completed \\
+    EXP025 & Test acoustic-token utility before LALM integration & Positive proxy \\
+    \bottomrule
+  \end{tabularx}
+
+  \vspace{0.18cm}
+  \begin{keybox}\textbf{Reading order:} these stages justify why the project moves from frozen UniAudio diagnostics to a compact learned symbolic token instead of raw MIDI appending.\end{keybox}
+\end{frame}
+
+\begin{frame}{Experiment Ladder II: Interface And Supervision}
+  \footnotesize
+  \begin{tabularx}{\linewidth}{p{2.75cm}Yp{2.45cm}}
+    \toprule
+    Stage & Role in the contribution & Status \\
+    \midrule
+    EXP027/028 & Diagnose failed or weak LALM interfaces & Completed diagnostics \\
+    EXP029 & Test UniAudio-style symbolic stream interface & Small positive control result \\
+    EXP030 & Build MIR/text target bank for tokenizer supervision & Completed data layer \\
+    EXP031A & MIR-supervised \code{S\_plan} structure recovery & Baseline complete; controls incomplete \\
+    EXP031A controls & Test zero-feature and label-shuffle alternatives before causal claims & \missing{Required next} \\
+    EXP031B & LLM-supervised \code{S\_LLM} tokenizer training & \missing{Planned, not run} \\
+    \bottomrule
+  \end{tabularx}
+
+  \vspace{0.18cm}
+  \begin{keybox}\textbf{Claim order:} EXP031A controls precede EXP031B because they decide whether current \code{S\_plan} structure recovery is causal or mostly prior-driven.\end{keybox}
+\end{frame}
+
+\begin{frame}{Evidence Gaps To Keep Visible}
+  \footnotesize
+  \begin{itemize}
+    \item \missing{EXP031A controls incomplete:} zero-feature and label-shuffle controls are required before making a causal MIR-structure claim.
+    \item \missing{No \code{S\_LLM} tokenizer yet:} EXP031A is MIR-supervised \code{S\_plan} evaluation, not Llama/Qwen-supervised token training.
+    \item \missing{Instrument macro-F1 is nonmonotonic:} it peaks around 350--400 steps and drops afterward, while other MIR heads keep improving.
+    \item \missing{Final LALM usage not proven:} EXP029 is a stream-interface proxy, not final open-ended music reasoning.
+    \item \missing{Decoded music downstream metrics incomplete:} music captioning, generated-audio quality/control, and paper-compatible QA/GPT-score style evaluations remain future work.
+    \item \missing{No generation intervention yet:} editing \code{S\_plan} and observing controlled audio changes remains future work.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Dataset Protocol}
+  \scriptsize
+  \begin{tabularx}{\linewidth}{p{2.5cm}YYY}
+    \toprule
+    Split & Tracks & 30 s windows & Notes \\
+    \midrule
+    Train & 1,289 & 11,279 & Track-level split before windowing \\
+    Validation & 270 & 2,334 & Same conversion protocol \\
+    Test & 151 & 1,385 & Held-out tracks, zero overlap \\
+    \bottomrule
+  \end{tabularx}
+
+  \vspace{0.45cm}
+  \begin{itemize}
+    \item Slakh supports controlled paired audio--MIDI experiments with objective symbolic labels.
+    \item All main symbolic comparisons preserve the same split and paired-data budget.
+    \item \missing{Real-domain symbolic-token generalization is still future work.}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Metrics 01A: Current Evidence Axes}
+  \footnotesize
+  \expfield{Question}{Yes, we have evaluated music-related downstream behavior, but not every metric is final paper-grade downstream evidence. Current evidence is strongest where labels and controls are objective.}
+
+  \begin{tabularx}{\linewidth}{p{2.8cm}Yp{3.0cm}}
+    \toprule
+    Metric axis & What it answers & Current status \\
+    \midrule
+    Output-level music QA & Can frozen UniAudio2 answer music questions from audio? & Completed diagnostic on Slakh instrument presence \\
+    Token-level causal proxy & Does aligned \code{S\_plan} reduce \code{C\_a} uncertainty? & Completed for EXP025/EXP029-style CE/PPL \\
+    MIR-structured recovery & Are instruments, pitch-class, meter, key, density, and polyphony recoverable from \code{S\_plan}? & EXP031A baseline complete; controls incomplete \\
+    \bottomrule
+  \end{tabularx}
+
+  \vspace{0.2cm}
+  \begin{keybox}\textbf{Metric rule:} use objective metrics and negative controls first; treat broad open-ended downstream tasks as future evidence until the output protocol is stable.\end{keybox}
+\end{frame}
+
+\begin{frame}{Metrics 01B: Future Evidence Axes}
+  \footnotesize
+  \expfield{Purpose}{This slide separates planned decoded-output evidence from the completed diagnostic/proxy metrics so the deck does not overstate the current claim.}
+
+  \begin{tabularx}{\linewidth}{p{2.8cm}Yp{3.0cm}}
+    \toprule
+    Metric axis & What it answers & Current status \\
+    \midrule
+    Decoded generation/control & Does symbolic conditioning improve generated audio and controllability? & \missing{Not yet evaluated} \\
+    Caption/open QA metrics & Does final LALM improve music captioning, MMAU-like QA, or GPT-scored outputs? & \missing{Not yet stable enough for claims} \\
+    \bottomrule
+  \end{tabularx}
+
+  \vspace{0.2cm}
+  \begin{keybox}\textbf{Presentation rule:} future decoded examples should be shown after EXP031A controls, not before, because the control suite determines whether the symbolic stream itself carries causal structure.\end{keybox}
+\end{frame}
+
+\begin{frame}{Metrics 02: Output-Level Music QA}
+  \footnotesize
+  \expfield{What was evaluated}{Frozen UniAudio2 was tested on Slakh primary instrument-presence QA. This is a music-related downstream output task, but it is used as a diagnostic baseline rather than the main contribution result.}
+  \expfield{Example prompt type}{``You are given a music audio clip. Answer whether the target instrument is present. Return only yes or no.''}
+  \expfield{Metrics used}{Exact accuracy, macro-F1, active invalid rate after conservative semantic recovery, strict invalid rate before semantic recovery, and prediction distribution.}
+  \expfield{Observed result}{151 clips / 906 QA rows; exact accuracy 0.6181; macro-F1 0.3782; active invalid 0.1181; strict invalid 0.3400; 796 yes / 3 no / 107 invalid.}
+
+  \begin{keybox}\textbf{Interpretation:} this exposed prompt-following and yes-bias issues, so QA alone is not a safe proof of music understanding or symbolic-token benefit.\end{keybox}
+  \vspace{0.18cm}
+  \missing{Missing evaluation: structural closed-set QA beyond primary instrument presence, MusicNet-style real-recording QA, caption attribute F1, and constrained decoding stability must still be run before broad output-level claims.}
+\end{frame}
+
+\begin{frame}{Metrics 03: Token-Level Causal Metrics}
+  \footnotesize
+  \expfield{Purpose}{Measure whether the symbolic stream changes token prediction in a controlled way, before claiming decoded downstream behavior.}
+
+  \begin{tabularx}{\linewidth}{p{1.55cm}p{2.75cm}Yp{3.1cm}}
+    \toprule
+    Stage & Metric & Control design & Interpretation \\
+    \midrule
+    EXP025 & Semantic CE/PPL for \code{C\_a} & reason-only, low-rate, aligned \code{S\_plan}, shuffled \code{S\_plan}, dummy & Aligned \code{S\_plan} gives best test CE 7.5963 and PPL 1990.88 \\
+    EXP027 & Test CE/PPL & aligned vs shuffled vs dummy row insertion & Negative result: aligned/shuffled/dummy are indistinguishable \\
+    EXP028 & CE/PPL/accuracy and adapter gate & LoRA adapter vs tiny-gate warm start & Stable but near-zero gate; not symbolic-use evidence \\
+    EXP029 & Stream-native CE/accuracy & aligned vs shuffled vs dummy symbolic stream & Small controlled gain: aligned test CE 5.7663 vs shuffled 5.7847 \\
+    \bottomrule
+  \end{tabularx}
+
+  \vspace{0.18cm}
+  \begin{keybox}\textbf{Why this matters:} aligned-vs-shuffled/dummy gaps are cleaner causal evidence than raw QA gains because they test temporal symbolic alignment directly.\end{keybox}
+  \vspace{0.18cm}
+  \missing{Missing evaluation: join token-level delta-PPL with per-sample QA/MIR improvement; this correlation is needed to connect token utility to downstream music understanding.}
+\end{frame}
+
+\begin{frame}{Metrics 04: MIR-Structured Symbolic Metrics}
+  \footnotesize
+  \expfield{Purpose}{Measure whether \code{S\_plan} preserves objective music structure from Slakh MIDI-derived labels, rather than only reconstructing internal features or lowering acoustic CE.}
+  \expfield{Metric families}{Instrument macro/micro F1, pitch-class macro-F1, meter accuracy, weak key accuracy, segment density accuracy, segment polyphony accuracy, and numeric MIR losses.}
+  \expfield{EXP031A result}{At test step 625: loss 6.6153, instrument macro-F1 0.5014, instrument micro-F1 0.7908, pitch-class macro-F1 0.8541, meter 0.7834, weak key 0.5567, segment density 0.8743, segment polyphony 0.7614.}
+  \expfield{Metric caveat}{Instrument macro-F1 is better at step 375 than 625, so rare-class thresholding/calibration must be handled separately from broad MIR recovery.}
+
+  \begin{keybox}\textbf{Interpretation:} EXP031A is the strongest current music-structure metric block, but it is MIR-supervised \code{S\_plan} evaluation, not LLM-supervised \code{S\_LLM} training.\end{keybox}
+  \vspace{0.18cm}
+  \missing{Missing evaluation: zero-feature and label-shuffle controls, per-class threshold calibration, and real-domain transfer are required before claiming robust symbolic MIR understanding.}
+\end{frame}
+
+\begin{frame}{Metrics 05A: Missing Downstream Plan -- Understanding}
+  \footnotesize
+  \begin{tabularx}{\linewidth}{p{2.5cm}Yp{3.7cm}}
+    \toprule
+    Downstream task & Metrics to report & Required experiment \\
+    \midrule
+    Music captioning / symbolic-to-text & caption attribute F1, tag mAP, CIDEr/BLEU/ROUGE/BERTScore, CLaMP3 retrieval & \missing{Run after EXP030 text targets are connected to a decoder} \\
+    Audio-to-symbolic & symbolic CE/PPL, token accuracy, instrument F1, pitch-range MAE, density/polyphony error & \missing{Train audio-to-\code{S\_plan} or MIR target head with controls} \\
+    Paper-compatible broad QA & exact/F1/invalid, MMAU-style accuracy, optional GPT-score with fixed rubric & \missing{Run after output protocol and parser stability improve} \\
+    \bottomrule
+  \end{tabularx}
+
+  \vspace{0.2cm}
+  \begin{keybox}\textbf{Priority:} these tasks connect the symbolic stream to human-readable music reasoning, but only after the current EXP031A control boundary is clean.\end{keybox}
+\end{frame}
+
+\begin{frame}{Metrics 05B: Missing Downstream Plan -- Generation}
+  \footnotesize
+  \begin{tabularx}{\linewidth}{p{2.5cm}Yp{3.7cm}}
+    \toprule
+    Downstream task & Metrics to report & Required experiment \\
+    \midrule
+    Symbolic-to-audio decoded output & FAD/KL, CLAP or CLaMP3 consistency, instrument classifier F1, chroma/beat consistency & \missing{Decode selected checkpoints and compare aligned vs shuffled \code{S\_plan}} \\
+    Generation control intervention & control adherence, edit locality, audio quality, before/after symbolic edit metrics & \missing{Run symbolic intervention suite; no current evidence} \\
+    \bottomrule
+  \end{tabularx}
+
+  \vspace{0.2cm}
+  \begin{keybox}\textbf{Next metric priority:} finish EXP031A controls, then add per-sample metric joins across QA, token CE/PPL, and MIR recovery before broad decoded-generation claims.\end{keybox}
+\end{frame}
+
+\begin{frame}{Diagnostic 01: Frozen UniAudio2 QA Boundary}
+  \footnotesize
+  \expfield{EXP Objective}{Measure whether the released UniAudio2 checkpoint can serve as a reliable music-understanding QA baseline before adding symbolic tokens.}
+  \expfield{Results}{On 151 Slakh clips and 906 instrument-presence QA rows, exact accuracy was 0.6181, macro-F1 was 0.3782, active invalid rate was 0.1181, and strict invalid rate was 0.3400. Predictions were heavily yes-biased: 796 yes, 3 no, and 107 invalid.}
+  \expfield{Discussion}{The model often produced caption-like fragments rather than exact yes/no outputs, so raw QA accuracy mixes musical understanding, formatting compliance, and label-prior bias. This makes frozen QA useful as a diagnostic boundary, but too brittle as the main contribution evidence.}
+  \begin{keybox}\textbf{Key point:} Frozen UniAudio2 QA is not the final claim; it motivates controlled token-level and symbolic-control evaluation.\end{keybox}
+  \vspace{0.18cm}
+  \expfield{Next Step}{Move to token-level MIR probes, where objective labels and shuffled controls can test whether audio tokens contain recoverable music structure.}
+\end{frame}
+
+\begin{frame}{Diagnostic 02: Token-Level MIR Probes}
+  \footnotesize
+  \expfield{EXP Objective}{Audit whether UniAudio2 reason and semantic audio tokens contain recoverable musical structure even when final QA behavior is brittle.}
+  \expfield{Results}{Frozen-token probe families showed that MIR information is recoverable from reason tokens, semantic tokens, or their combination under controlled probe settings. Later label-shuffle and test-shuffle controls clarified which probe results were meaningful.}
+  \expfield{Discussion}{This stage changed the evaluation philosophy. Instead of relying on one open-ended QA score, the project needed information-recovery probes, negative controls, and aligned-vs-corrupted symbolic comparisons.}
+  \begin{keybox}\textbf{Key point:} The audio token space is not empty; symbolic fusion can be evaluated by whether it adds structured information beyond recoverable audio-token content.\end{keybox}
+  \vspace{0.18cm}
+  \expfield{Next Step}{Design symbolic inputs that fit the UniAudio token budget and can be tested against shuffled or dummy symbolic controls.}
+\end{frame}
+
+\begin{frame}{EXP020--023: Symbolic Representation Feasibility}
+  \footnotesize
+  \expfield{EXP Objective}{Determine whether raw MIDI-style tokens, rule summaries, or learned low-rate symbolic tokens are the right representation for UniAudio-style fusion.}
+  \expfield{Results}{Raw MIDI tokenizations were often too long or brittle for clean 30 s window comparisons. Low-rate rule summaries were more controllable, averaging about 149 tokens per 30 s with 0\% truncation, but they remained hand-designed and limited.}
+  \expfield{Discussion}{These experiments created the first major design fork. Simply appending raw MIDI would make gains hard to interpret because length, context capacity, and alignment artifacts would confound the result. A compact learned token was therefore academically cleaner.}
+  \begin{keybox}\textbf{Key point:} The project pivoted from ``append MIDI'' to ``learn a low-rate symbolic planning token.''\end{keybox}
+  \vspace{0.18cm}
+  \expfield{Next Step}{Train a learned symbolic bottleneck, \code{S\_plan}, with fixed length and explicit codebook-health diagnostics.}
+\end{frame}
+
+\begin{frame}{EXP024: Learned \code{S\_plan} Reconstruction Codec}
+  \footnotesize
+  \expfield{EXP Objective}{Train a compact symbolic planning codec that compresses MIDI-derived frame features into four low-rate RVQ streams for later UniAudio-style conditioning.}
+  \expfield{Results}{The long checkpoint at step 42,000 reached validation reconstruction loss 0.00918, binary accuracy 0.99777, continuous MSE 0.00172, and codebook usage 0.3134 / 0.7187 / 0.8073 / 0.8124.}
+  \expfield{Discussion}{EXP024 established that a learned symbolic bottleneck is feasible and not collapsed. However, reconstruction alone only proves that MIDI-derived structure can be compressed; it does not prove that the token helps audio modeling or language reasoning.}
+  \begin{keybox}\textbf{Key point:} \code{S\_plan} became a technically healthy symbolic codec, but not yet a reasoning token.\end{keybox}
+  \vspace{0.18cm}
+  \expfield{Next Step}{Test whether aligned \code{S\_plan} reduces uncertainty in UniAudio semantic acoustic tokens compared with shuffled and dummy controls.}
+\end{frame}
+
+\begin{frame}{EXP024 Demo Evidence: Feature-Level Gallery}
+  \footnotesize
+  \expfield{Demo update}{The web demo now shows three fixed validation windows as target / reconstruction / absolute-error heatmaps, rather than using a piano-roll proxy that visually overlapped with MIR examples.}
+
+  \begin{tabularx}{\linewidth}{p{4.0cm}p{1.55cm}p{1.65cm}Y}
+    \toprule
+    Fixed example & Binary acc. & Cont. MSE & Unique RVQ codes per book \\
+    \midrule
+    \code{Slakh\_Track01501\_w000\_s0000000} & 1.000 & 0.00174 & 15 / 15 / 17 / 17 \\
+    \code{Slakh\_Track01501\_w001\_s0003000} & 1.000 & 0.00246 & 20 / 24 / 26 / 25 \\
+    \code{Slakh\_Track01501\_w003\_s0009000} & 1.000 & 0.00130 & 17 / 17 / 21 / 25 \\
+    \bottomrule
+  \end{tabularx}
+
+  \vspace{0.18cm}
+  \begin{keybox}\textbf{Claim boundary:} this is symbolic feature reconstruction evidence. It is not waveform generation, full MIDI event reconstruction, or audio-to-MIDI transcription.\end{keybox}
+\end{frame}
+
+\begin{frame}{EXP025: Acoustic-Token Utility Proxy}
+  \footnotesize
+  \expfield{EXP Objective}{Evaluate whether fixed \code{S\_plan} carries information useful for predicting UniAudio semantic acoustic tokens \code{C\_a} from reason tokens \code{R\_a}.}
+  \expfield{Results}{Aligned \code{S\_plan} gave the best proxy result: valid CE 7.5073, test CE 7.5963, and test PPL 1990.88. It improved over reason-only test CE 7.6573 and shuffled \code{S\_plan} test CE 7.6307.}
+  \expfield{Discussion}{This is the first clean positive result for the learned symbolic token. Because aligned symbolic tokens beat shuffled and dummy controls, the improvement is less likely to be explained by merely adding tokens or capacity. Still, the task is a proxy objective, not final LALM reasoning.}
+  \begin{keybox}\textbf{Key point:} Aligned \code{S\_plan} reduces acoustic-token uncertainty under controls.\end{keybox}
+  \vspace{0.18cm}
+  \expfield{Next Step}{Integrate \code{S\_plan} into the LALM-facing path and test whether the final model interface can actually use the symbolic stream.}
+\end{frame}
+
+\begin{frame}{EXP025 Demo Evidence: Aggregate First, Preview Second}
+  \footnotesize
+  \expfield{Demo update}{The page now explicitly separates the held-out aggregate result from validation fixed-preview token tables. The aggregate CE/PPL row carries the claim; fixed examples are sanity previews.}
+
+  \begin{tabularx}{\linewidth}{p{3.0cm}p{1.5cm}p{1.55cm}p{1.55cm}Y}
+    \toprule
+    Condition & Valid CE & Test CE & Test PPL & Role \\
+    \midrule
+    Reason only & 7.5650 & 7.6573 & 2116.06 & Audio-token-only baseline \\
+    Low-rate rule summary & 7.5534 & 7.6445 & 2089.16 & Rule-symbolic bridge \\
+    Aligned \code{S\_plan} & \textbf{7.5073} & \textbf{7.5963} & \textbf{1990.88} & Best proxy result \\
+    Shuffled \code{S\_plan} & 7.5376 & 7.6307 & 2060.58 & Alignment-corrupted control \\
+    Dummy/random controls & 7.54--7.69 & 7.63--7.69 & 2064--2196 & Extra-token/context controls \\
+    \bottomrule
+  \end{tabularx}
+
+  \vspace{0.18cm}
+  \missing{Do not call this downstream generation improvement. It is token-level utility evidence for why the symbolic stream should help.}
+\end{frame}
+
+\begin{frame}{EXP027: Naive LALM Row Insertion}
+  \footnotesize
+  \expfield{EXP Objective}{Test the simplest integration path: insert or append learned symbolic rows into the released UniAudio2 LALM interface with minimal architectural changes.}
+  \expfield{Results}{Reason-only achieved test CE 5.3598 and PPL 212.67. Aligned \code{S\_plan} degraded to test CE 5.5113, while shuffled \code{S\_plan} was 5.5119 and dummy symbolic tokens were 5.5100.}
+  \expfield{Discussion}{Aligned, shuffled, and dummy symbolic inputs were nearly indistinguishable, which means the LALM did not use the symbolic content in this interface. This negative result is important: it separates a good symbolic codec from a usable LALM integration.}
+  \begin{keybox}\textbf{Key point:} Naive symbolic insertion failed; the bottleneck shifted from token learning to interface design.\end{keybox}
+  \vspace{0.18cm}
+  \expfield{Next Step}{Try a gentler adapter path that can inject symbolic information without destabilizing the released LALM representation space.}
+\end{frame}
+
+\begin{frame}{EXP028: Adapter Interface Diagnostic}
+  \footnotesize
+  \expfield{EXP Objective}{Diagnose whether LoRA plus a symbolic adapter can create a non-destructive route for symbolic information into the LALM-facing prediction objective.}
+  \expfield{Results}{The first LoRA+adapter setup destabilized training: valid CE 7.8022, valid PPL 2445.86, and accuracy 0.0284. A tiny-gate warm start recovered reason-only-level behavior with valid CE 5.4116 and accuracy 0.1391.}
+  \expfield{Discussion}{The tiny-gate result shows that the interface can be made non-destructive, but the adapter gate stayed around $3.36 \times 10^{-4}$ and the delta ratio around $10^{-6}$. Therefore this experiment does not prove symbolic usage.}
+  \begin{keybox}\textbf{Key point:} Stability is possible, but the adapter is effectively too closed to count as symbolic fusion evidence.\end{keybox}
+  \vspace{0.18cm}
+  \expfield{Next Step}{Redesign the symbolic stream to follow UniAudio-style multi-stream structure rather than treating symbols as an external side-channel.}
+\end{frame}
+
+\begin{frame}{EXP029: UniAudio-Style Symbolic Stream}
+  \footnotesize
+  \expfield{EXP Objective}{Create a stream-native symbolic interface using 8 audio streams, 4 symbolic RVQ streams, and 1 text stream, ordered as \code{R\_a} $\rightarrow$ \code{S\_plan} $\rightarrow$ \code{C\_a}.}
+  \expfield{Results}{The sequence layout was healthy: 151 reason frames, 30 symbolic frames, 376 semantic frames, total length 557, max length 1024, 0\% truncation, and 0\% bad-position rate. Aligned \code{S\_plan} achieved test CE 5.7663, beating shuffled 5.7847 and dummy 5.7852.}
+  \expfield{Discussion}{The improvement is modest, but it is the cleanest LALM-interface evidence so far because alignment matters and extra symbolic rows alone are insufficient. The result supports stream-native fusion, while still falling short of final open-ended LALM reasoning.}
+  \begin{keybox}\textbf{Key point:} A UniAudio-compatible symbolic stream produces a small but controlled aligned-vs-corrupted gain.\end{keybox}
+  \vspace{0.18cm}
+  \expfield{Next Step}{Build structured MIR/text targets so the symbolic tokenizer can be supervised more directly and interpreted beyond acoustic CE.}
+\end{frame}
+
+\begin{frame}{EXP029 Demo Evidence: Case Spectrum}
+  \footnotesize
+  \expfield{Demo update}{The stream-control card now shows both positive and boundary fixed examples. This prevents the qualitative section from looking cherry-picked and makes the small-margin nature of EXP029 transparent.}
+
+  \begin{tabularx}{\linewidth}{p{4.0cm}p{1.45cm}p{1.6cm}p{1.2cm}Y}
+    \toprule
+    Validation fixed example & Aligned loss & Best control & Margin & Interpretation \\
+    \midrule
+    \code{Slakh\_Track01501\_w000\_s0000000} & 5.226 & 5.280 & +0.054 & Strong positive fixed-case margin \\
+    \code{Slakh\_Track01501\_w001\_s0003000} & 6.159 & 6.163 & +0.004 & Small positive fixed-case margin \\
+    \code{Slakh\_Track01501\_w002\_s0006000} & 6.097 & 6.091 & -0.006 & Boundary / failure case \\
+    \code{Slakh\_Track01501\_w003\_s0009000} & 5.876 & 5.869 & -0.007 & Boundary / failure case \\
+    \bottomrule
+  \end{tabularx}
+
+  \vspace{0.18cm}
+  \begin{keybox}\textbf{Claim boundary:} EXP029 supports a stream-interface mechanism. It is not broad decoded-music generation and not final text-to-music behavior.\end{keybox}
+\end{frame}
+
+\begin{frame}{EXP030: MIR/Text Target Bank}
+  \footnotesize
+  \expfield{EXP Objective}{Construct the supervision layer needed to train and evaluate \code{S\_plan} as a structured symbolic token rather than only a reconstruction or acoustic-prediction aid.}
+  \expfield{Results}{The target bank produced 89,630 train LLM examples and 67,072 train QA examples from 11,279 windows, plus 18,517 / 13,849 valid examples and 11,012 / 8,242 test examples. There were 0 conversion failures across splits.}
+  \expfield{Discussion}{EXP030 is not a model-result claim by itself. Its contribution is data infrastructure: it links symbolic/audio windows to MIR attributes and text-like supervision targets, enabling MIR-supervised \code{S\_plan} evaluation now and planned LLM-supervised \code{S\_LLM} training later.}
+  \begin{keybox}\textbf{Key point:} EXP030 turns the project from codec evaluation into supervised symbolic-token learning.\end{keybox}
+  \vspace{0.18cm}
+  \expfield{Next Step}{Run MIR-supervised \code{S\_plan} evaluation first, because it gives objective, controllable labels before expensive LLM-supervised \code{S\_LLM} training.}
+\end{frame}
+
+\begin{frame}{EXP031A: Objective And Configuration}
+  \footnotesize
+  \expfield{EXP Objective}{Test whether structured MIR attributes can be recovered from \code{S\_plan} when the EXP024 autoencoder is initialized and effectively frozen. This is MIR-supervised \code{S\_plan} evaluation, not LLM-supervised \code{S\_LLM} training.}
+  \expfield{Configuration}{EXP024 \code{S\_plan} encoder initialized and treated as the symbolic representation source; MIR heads evaluate instruments, pitch classes, key, meter, density, and polyphony.}
+  \expfield{Claim boundary}{This stage evaluates structured recovery from the current symbolic planning token. It does not train a language-readable \code{S\_LLM} tokenizer and does not prove final LALM generation.}
+  \begin{keybox}\textbf{Key point:} MIR structure is recoverable from \code{S\_plan}, but control runs are required before the paper can claim causal symbolic content.\end{keybox}
+\end{frame}
+
+\begin{frame}{EXP031A: Claim-Validation Results}
+  \footnotesize
+  \expfield{EXP Objective}{Evaluate whether MIR recovery reflects sample-specific \code{S\_plan} content rather than dataset priors, head bias, or class imbalance.}
+
+  \begin{tabularx}{\linewidth}{p{2.05cm}p{1.35cm}p{1.3cm}p{1.3cm}p{1.2cm}p{1.2cm}Y}
+    \toprule
+    Comparison & Split / step & Inst. macro & Inst. micro & Meter & Weak key & Interpretation \\
+    \midrule
+    Aligned \code{S\_plan} & test / 625 & 0.5014 & 0.7908 & 0.7834 & 0.5567 & Main positive row; insufficient alone for causal claim. \\
+    Zero features & valid / 500 & 0.4263 & 0.8354 & 0.8548 & 0.1264 & Reveals strong prior/head effects for micro-F1 and meter. \\
+    Label shuffle & \missing{needed} & \missing{--} & \missing{--} & \missing{--} & \missing{--} & Required to test feature-target alignment. \\
+    Target prior & \missing{planned} & \missing{--} & \missing{--} & \missing{--} & \missing{--} & Required floor for common instruments, meter, and density. \\
+    \bottomrule
+  \end{tabularx}
+
+  \vspace{0.18cm}
+  \expfield{Discussion}{The main aligned row is promising, but the zero-feature control shows that several high MIR scores can be explained without symbolic input. EXP031A should therefore be reported axis-by-axis, not as a single aggregate success.}
+  \expfield{Next Step}{Complete matched zero-feature test, label-shuffle, target-prior baseline, and threshold calibration before starting \code{S\_LLM}.}
+\end{frame}
+
+\begin{frame}{EXP031A Controls: Axis-Level Claim Boundary}
+  \footnotesize
+  \expfield{EXP Objective}{Decide which MIR axes are safe contribution evidence and which axes are prior-dominated diagnostics.}
+
+  \begin{tabularx}{\linewidth}{p{2.6cm}p{1.55cm}p{1.75cm}Y}
+    \toprule
+    Metric axis & Aligned valid 625 & Zero-feature valid 500 & Current interpretation \\
+    \midrule
+    Weak key & 0.5484 & 0.1264 & Most clearly feature-dependent so far; still needs label-shuffle and test confirmation. \\
+    Instrument macro-F1 & 0.4986 & 0.4263 & Some symbolic signal, but class imbalance and thresholding remain unresolved. \\
+    Pitch-class macro-F1 & 0.8514 & 0.8295 & Small positive gap; descriptive until target-prior baseline is reported. \\
+    Instrument micro-F1 & 0.8047 & 0.8354 & \missing{Do not headline;} zero-feature exceeds aligned. \\
+    Meter accuracy & 0.7661 & 0.8548 & \missing{Do not headline;} common-meter prior is strong. \\
+    Segment density & 0.8873 & 0.8794 & Nearly matched by zero-feature; use only with controls and examples. \\
+    \bottomrule
+  \end{tabularx}
+
+  \vspace{0.16cm}
+  \begin{keybox}\textbf{Key point:} EXP031A is currently strongest as a controlled diagnostic. The paper-safe claim should focus only on axes that survive zero-feature, label-shuffle, and target-prior controls.\end{keybox}
+\end{frame}
+
+\begin{frame}{EXP031A Controls: Execution Order}
+  \footnotesize
+  \expfield{Next Step 1}{Run zero-feature first with the same B4096/S625 evaluation boundary. If it performs strongly, revisit MIR head priors before claiming symbolic content.}
+  \expfield{Next Step 2}{Run label-shuffle next. If shuffled labels approach aligned performance, the feature-target alignment claim weakens.}
+  \expfield{Next Step 3}{Run threshold calibration on validation outputs before changing the instrument loss. If calibration recovers macro-F1, balanced BCE may be unnecessary.}
+
+  \begin{keybox}
+    \textbf{Priority rule:} these controls are more urgent than balanced-inst training or \code{S\_LLM} decoder ablations because they protect the core academic claim.
+  \end{keybox}
+\end{frame}
+
+\begin{frame}{EXP031B: Planned \code{S\_LLM} Tokenizer}
+  \footnotesize
+  \expfield{EXP Objective}{Train a planned LLM-supervised symbolic tokenizer, \code{S\_LLM}, using an LLM decoder objective so that symbolic tokens become language-readable and can support text/MIR supervision beyond hand-structured heads.}
+  \expfield{Results}{\missing{Not run yet.} The planned first decoder family is Llama-3.2-compatible, starting with 300M for stable/debug runs and checking 3B later. Newer Llama or Qwen comparisons should be treated as ablations after the control suite is clean.}
+  \begin{keybox}\textbf{Key point:} \code{S\_LLM} is the next conceptual tokenizer stage, but not the next safest experiment until controls pass.\end{keybox}
+\end{frame}
+
+\begin{frame}{EXP031B: Ordering Rationale}
+  \footnotesize
+  \expfield{Discussion}{Running \code{S\_LLM} before EXP031A controls would create an interpretability problem: a high-capacity decoder might learn dataset priors or target shortcuts, making it unclear whether the current \code{S\_plan} representation itself carries causal structure.}
+  \expfield{Decoder ablation plan}{After controls pass, compare Llama-3.2-300M, Llama-3.2-3B, newer Llama, and Qwen as decoder/supervisor ablations. The first comparison should test stability and claim clarity, not only instruction-following strength.}
+  \vspace{0.18cm}
+  \expfield{Next Step}{After EXP031A controls validate aligned \code{S\_plan} content, run EXP031B \code{S\_LLM} with Llama-3.2-300M first, then compare stronger decoders as an academic ablation.}
+\end{frame}
+
+\begin{frame}{EXP034B: Current Music-Claim Hardening}
+  \footnotesize
+  \expfield{EXP Objective}{Run the stricter open-gate comparison for the stream-native setup: reason-only versus aligned, shuffled, and dummy \code{S\_plan} streams under matched LoRA/update/data settings.}
+
+  \begin{tabularx}{\linewidth}{p{3.2cm}p{1.4cm}p{1.7cm}Y}
+    \toprule
+    Condition & Status & Latest CE & Interpretation \\
+    \midrule
+    Reason-only open-gate baseline & done & 5.8590 test & Baseline row available \\
+    Aligned \code{S\_plan} stream & running & 5.2191 train & Main condition; final test row pending \\
+    Shuffled \code{S\_plan} stream & running & 8.8449 train step 3 & Alignment control; local-only logging started \\
+    Dummy stream & missing & -- & Required token-budget control \\
+    \bottomrule
+  \end{tabularx}
+
+  \vspace{0.18cm}
+  \begin{keybox}\textbf{Claim boundary:} EXP034B is still semantic-token stream training. It is not a final text-to-music, song-generation, or MIDI-to-audio LALM checkpoint.\end{keybox}
+\end{frame}
+
+\begin{frame}{EXP035: Decoded Rollout Bridge}
+  \footnotesize
+  \expfield{EXP Objective}{Convert EXP029/EXP034 stream checkpoints into the first decoded generation artifacts by rolling out semantic acoustic tokens and decoding them to waveform.}
+  \expfield{Generation contract}{\code{R\_a} + \code{S\_plan} + semantic BOS $\rightarrow$ autoregressive \code{C\_a} rollout $\rightarrow$ codec decode.}
+
+  \begin{tabularx}{\linewidth}{p{2.6cm}Yp{3.1cm}}
+    \toprule
+    Condition & Role & Status \\
+    \midrule
+    Reason-only & Audio-token generation baseline & Available after source checkpoint completes \\
+    Aligned \code{S\_plan} & Oracle symbolic-plan-conditioned generation & Next export target \\
+    Shuffled \code{S\_plan} & Corrupted alignment control & Run after checkpoint completes \\
+    Dummy stream & Token-budget control & Needed before strong claim \\
+    \bottomrule
+  \end{tabularx}
+
+  \vspace{0.18cm}
+  \missing{Important: EXP035 is not end-to-end text-to-music. It is the fastest decoded bridge proving that the symbolic stream can reach waveform outputs.}
+\end{frame}
+
+\begin{frame}{Final LALM Training Readiness}
+  \footnotesize
+  \expfield{Current status}{The file \code{train\_symbolic\_fused\_lalm.py} exists, but it currently validates data/batch contracts and writes a resolved run spec. It does not yet run full UniAudio2 symbolic-fused LoRA/FSDP optimization.}
+
+  \begin{tabularx}{\linewidth}{p{2.1cm}Yp{3.2cm}}
+    \toprule
+    Stage & Claim target & Readiness \\
+    \midrule
+    G0 & \code{R\_a} + \code{S\_plan} $\rightarrow$ \code{C\_a} rollout + waveform & Mostly ready through EXP035 export \\
+    G1 & MIDI / \code{S\_plan} $\rightarrow$ audio generation & Requires reducing or removing \code{R\_a} dependence \\
+    G2 & Text-to-music / song generation & Requires prompt supervision and final generation trainer wiring \\
+    \bottomrule
+  \end{tabularx}
+
+  \vspace{0.18cm}
+  \begin{keybox}\textbf{Implementation next step:} wire the real trainer backend: UniAudio2 checkpoint load, LoRA injection, symbolic stream/adapter injection, autoregressive audio-token loss, checkpoint save/reload, and EXP035-compatible state dicts.\end{keybox}
+\end{frame}
+
+\begin{frame}{Current Paper Story}
+  \footnotesize
+  \begin{enumerate}
+    \item Frozen UniAudio2 is not a reliable final music-QA baseline, but its token streams carry recoverable structure.
+    \item Raw symbolic MIDI is too long or brittle for a clean UniAudio-style fusion interface.
+    \item \code{S\_plan} gives a compact learned symbolic stream with healthy reconstruction and codebook diagnostics.
+    \item Aligned \code{S\_plan} improves acoustic-token prediction compared with shuffled/dummy controls.
+    \item Naive LALM insertion fails, but a stream-native interface gives a small positive control result.
+    \item MIR-supervised EXP031A suggests \code{S\_plan} contains structured musical attributes, pending controls.
+  \end{enumerate}
+\end{frame}
+
+\begin{frame}{Most Important Next Experiments}
+  \scriptsize
+  \begin{tabularx}{\linewidth}{p{1.2cm}p{3.3cm}Yp{3.3cm}}
+    \toprule
+    Rank & Experiment & Why it matters & Command status \\
+    \midrule
+    P0 & EXP034B controls & Makes aligned vs shuffled vs dummy stream comparison paper-safe & Aligned and shuffled running; dummy still needed \\
+    P0 & EXP035 decoded rollout bridge & Turns token-stream checkpoints into waveform examples for the demo & Run after EXP034B checkpoints finish \\
+    P1 & EXP031A zero/label-shuffle controls & Separates MIR priors/head bias from symbolic content & Complete before stronger MIR claims \\
+    P1 & Final trainer backend wiring & Required for true Symbolic-Aware generation LALM training & Not wired yet; dry-run contract exists \\
+    P2 & EXP031B \code{S\_LLM} supervision & Tests language-readable symbolic-token training & Start after controls pass \\
+    \bottomrule
+  \end{tabularx}
+\end{frame}
+
+\begin{frame}{Team Handoff Wording}
+  \footnotesize
+  \begin{block}{What we can say}
+    We have a compact learned symbolic planning codec, \code{S\_plan}, that reconstructs MIDI-derived structure, improves acoustic-token prediction under aligned-vs-corrupted controls, and supports MIR structure recovery in EXP031A pending control completion.
+  \end{block}
+
+  \vspace{0.3cm}
+  \begin{block}{What we should not say yet}
+    \missing{\code{S\_LLM} has already been trained, or \code{S\_plan} is final-LALM-proven / generation-controllable.}
+  \end{block}
+\end{frame}
+
+\begin{frame}{End State For The Next Paper Iteration}
+  \footnotesize
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.48\linewidth}
+      \stage{Strongest current evidence}
+      \begin{itemize}
+        \item EXP024 reconstruction and codebook health.
+        \item EXP025 aligned improvement over corrupted controls.
+        \item EXP029 stream-native positive gap.
+        \item EXP031A MIR recovery baseline.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.48\linewidth}
+      \missing{Missing before stronger claims}
+      \begin{itemize}
+        \item EXP031A zero-feature and label-shuffle controls.
+        \item Calibration for instrument macro-F1.
+        \item EXP031B \code{S\_LLM} LLM-supervised tokenizer training.
+        \item Final LALM and generation interventions.
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\end{document}
