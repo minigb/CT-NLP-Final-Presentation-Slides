@@ -119,14 +119,14 @@
 
   \vspace{5.0cm}
   \begin{tcolorbox}[key]
-    \textbf{Central question:} Does a compact learned symbolic stream, aligned to the audio
-    window's own MIDI, reduce acoustic-token uncertainty more than a shuffled or dummy
-    stream of the same length?
+    Audio language models handle sound well — but musical structure lives in MIDI,
+    not in waveforms.
+    \textbf{Can we inject symbolic structure into a LALM in a controlled, verifiable way?}
   \end{tcolorbox}
 \end{frame}
 
 % ----------------------------------------------------------------
-% 1 — MOTIVATION
+% 1 — PROBLEM
 % ----------------------------------------------------------------
 \begin{frame}{Audio Tokens Do Not Reliably Encode Musical Structure}
 
@@ -148,74 +148,47 @@
 
   \smallskip
   \begin{tcolorbox}[key]
-    \textbf{Hypothesis:} an aligned symbolic stream reduces acoustic-token uncertainty —
-    but only if it carries music-structural content, not just extra capacity.
-    Shuffled and dummy controls are required at every step.
+    Verifying that symbolic injection is \emph{useful} requires more than comparing to
+    no-injection: a shuffled or dummy stream of the same length could produce the same
+    gain from capacity alone.
+    \textbf{Our whole evaluation is designed around this distinction.}
   \end{tcolorbox}
 \end{frame}
 
 % ----------------------------------------------------------------
-% 2 — DIAGNOSTIC
+% 2 — RESEARCH QUESTIONS
 % ----------------------------------------------------------------
-\begin{frame}{Diagnostic: Frozen UniAudio 2.0 Fails on Music QA}
-  \framesubtitle{151 Slakh clips, 906 instrument-presence QA rows — no fine-tuning}
+\begin{frame}{Three Research Questions Organize This Work}
 
   {\small
-  \begin{tabular}{ll}
+  \begin{tabular}{p{2.2cm}p{10.0cm}}
     \toprule
-    \textbf{Metric} & \textbf{Value} \\
+    \textbf{Question} & \textbf{What we need to show} \\
     \midrule
-    Exact accuracy                           & 0.618 \\
-    Macro-F1                                 & 0.378 \\
-    Invalid responses (before recovery)      & 34.0\% \\
-    Active invalid (after semantic recovery) & 11.8\% \\
-    Prediction distribution                  & 796 yes / 3 no / 107 invalid \\
+    \textbf{RQ1}\\Acoustic utility &
+      Aligned symbolic stream reduces acoustic token cross-entropy more than a shuffled
+      or dummy stream of the same size. \\[8pt]
+    \textbf{RQ2}\\Alignment specificity &
+      The gain comes from \emph{alignment-specific content}, not token budget or
+      model capacity.  Requires aligned $>$ shuffled AND aligned $>$ dummy. \\[8pt]
+    \textbf{RQ3}\\Structural content &
+      Symbolic stream encodes music-structural attributes recoverable by probing —
+      verified against a zero-feature baseline that exposes dataset priors. \\
     \bottomrule
   \end{tabular}}
-
-  \smallskip
-  The model produces caption-like fragments instead of yes/no answers.
-  Extreme yes-bias makes QA accuracy unreliable as a primary evaluation metric.
-
-  \smallskip
-  \begin{tcolorbox}[warn]
-    \textbf{Implication:} We rely on controlled cross-entropy comparisons and MIR probing
-    — not open-ended QA accuracy — as our primary evaluation signals.
-  \end{tcolorbox}
-\end{frame}
-
-% ----------------------------------------------------------------
-% 3 — BASE MODEL
-% ----------------------------------------------------------------
-\begin{frame}{Base Model: UniAudio 2.0 Factorizes Audio into Two Streams}
-
-  {\small
-  \begin{tabular}{p{3.8cm}p{3.5cm}p{5.0cm}}
-    \toprule
-    \textbf{Stream} & \textbf{Role} & \textbf{Training} \\
-    \midrule
-    $R_a$ — reasoning tokens & High-level, language-aligned &
-      SFT + GRPO on ASR, captioning, reasoning \\[4pt]
-    $C_a$ — reconstruction tokens & Fine-grained acoustics (8 RVQ) &
-      Trained after $R_a$ frozen; 8 streams, 376 frames \\
-    \bottomrule
-  \end{tabular}}
-
-  \smallskip
-  A unified autoregressive transformer predicts $C_a$ conditioned on text and $R_a$.
-  Neither stream is supervised on MIDI-derived symbolic structure.
 
   \smallskip
   \begin{tcolorbox}[key]
-    \textbf{Gap:} chord, meter, stem-level instrument identity are absent from both streams.
-    We insert \splan{} between $R_a$ and $C_a$ to carry exactly this missing information.
+    Experiments are \textbf{evidence for these claims}, not the claims themselves.
+    Each comparison uses the same aligned / shuffled / dummy protocol so gains can be
+    attributed precisely to symbolic content — not to extra tokens.
   \end{tcolorbox}
 \end{frame}
 
 % ----------------------------------------------------------------
-% 4 — APPROACH
+% 3 — APPROACH
 % ----------------------------------------------------------------
-\begin{frame}{Our Approach: Insert \splan{} as a Third Stream}
+\begin{frame}{Our Approach: \splan{} as a Third Stream in UniAudio 2.0}
 
   \begin{center}
   \vspace{0.3cm}
@@ -241,22 +214,23 @@
   \end{center}
 
   \smallskip
-  Total sequence length: $151 + 30 + 376 = \mathbf{557}$ tokens —
-  \textbf{0\% truncation} under the 1{,}024 context limit.
+  \splan{} uses a 4-stage RVQ codec trained on MIDI-derived frame features
+  (pitch-class, instrument, meter, density).
+  Total sequence: $151 + 30 + 376 = \mathbf{557}$ tokens — \textbf{0\% truncation} under 1{,}024 limit.
 
   \smallskip
   \begin{tcolorbox}[key]
-    \textbf{Why 30 frames, not raw MIDI?}
-    30 frames cover a full 30-second window (1 frame/second).
-    Raw MIDI tokenization of the same window produces 2{,}000–8{,}000 tokens — context-budget-breaking and incompatible with RVQ positional encoding.
+    Raw MIDI appending fails: 2{,}000–8{,}000 tokens per window saturates the context,
+    and variable-length sequences cannot be shuffled or dummy-controlled uniformly.
+    \splan{}'s fixed-length RVQ design makes the evaluation protocol possible.
   \end{tcolorbox}
 \end{frame}
 
 % ----------------------------------------------------------------
-% 5 — CONTROLS
+% 4 — CONTROLS
 % ----------------------------------------------------------------
-\begin{frame}{Evaluation Design: Four-Condition Control Protocol}
-  \framesubtitle{Every experiment runs all four conditions simultaneously}
+\begin{frame}{Evaluation Protocol: Every Comparison Uses All Four Conditions}
+  \framesubtitle{A gain of aligned over both shuffled and dummy is required for an alignment-specific claim}
 
   {\small
   \begin{tabular}{p{3.0cm}p{4.5cm}p{4.5cm}}
@@ -277,44 +251,17 @@
 
   \smallskip
   \begin{tcolorbox}[good]
-    \textbf{Claim rule:} aligned must beat \emph{both} shuffled and dummy to establish
-    that alignment-specific symbolic content drives the gain — not just extra tokens.
+    \textbf{Claim rule:} aligned must beat \emph{both} shuffled and dummy.
+    Shuffled preserves statistics but breaks alignment; dummy removes all content.
+    Together they isolate the alignment-specific effect from pure capacity.
   \end{tcolorbox}
 \end{frame}
 
 % ----------------------------------------------------------------
-% 6 — DATASET
+% 5 — PREREQUISITE: CODEC TABLE
 % ----------------------------------------------------------------
-\begin{frame}{Dataset: Slakh2100 — Paired Audio and MIDI}
-
-  {\small
-  \begin{tabular}{p{2.0cm}rrl}
-    \toprule
-    \textbf{Split} & \textbf{Tracks} & \textbf{Windows} & \textbf{Notes} \\
-    \midrule
-    Train      & 1{,}289 & 11{,}279 & Track-level split before windowing \\
-    Validation & 270     & 2{,}334  & Zero track overlap with train \\
-    Test       & 151     & 1{,}385  & Held-out; never seen during training \\
-    \bottomrule
-  \end{tabular}}
-
-  \smallskip
-  Slakh provides professional-grade synthesized multi-track audio with exact aligned MIDI.
-  Track-level splitting prevents musical phrases from appearing in both train and test.
-
-  \smallskip
-  \begin{tcolorbox}[key]
-    All cross-entropy numbers in this presentation are on the held-out \textbf{test set}
-    unless labelled ``valid''.
-    All conditions use the same audio-MIDI windows.
-  \end{tcolorbox}
-\end{frame}
-
-% ----------------------------------------------------------------
-% 7 — EXP024 TABLE
-% ----------------------------------------------------------------
-\begin{frame}{EXP024: The \splan{} Codec Reconstructs Faithfully}
-  \framesubtitle{RVQ autoencoder — 4 streams, 512 codes each, 42{,}000 training steps}
+\begin{frame}{Prerequisite: The Symbolic Codec Reconstructs Faithfully}
+  \framesubtitle{4-stage RVQ, 512 codes per stage — 42{,}000 training steps on Slakh}
 
   {\small
   \begin{tabular}{ll}
@@ -334,16 +281,16 @@
 
   \smallskip
   \begin{tcolorbox}[good]
-    \textbf{EXP024:} \splan{} is a technically healthy symbolic bottleneck.
     Books 2–4 reach 72–81\% utilization — no codebook collapse.
-    Necessary precondition; does not yet prove downstream acoustic utility.
+    This is a \textbf{prerequisite}, not a claim: it establishes that
+    differences in downstream comparisons come from symbolic content, not codec failure.
   \end{tcolorbox}
 \end{frame}
 
 % ----------------------------------------------------------------
-% 8 — EXP024 FIGURE
+% 6 — PREREQUISITE: CODEC FIGURE
 % ----------------------------------------------------------------
-\begin{frame}{EXP024: Feature Heatmap — Target vs.\ Reconstruction}
+\begin{frame}{Prerequisite: Feature Heatmap — Target vs.\ Reconstruction}
   \framesubtitle{Slakh Track01501, window 0 (0–30 s) — binary acc 1.000, MSE 0.00174}
 
   \begin{center}
@@ -355,14 +302,14 @@
   {\footnotesize\color{Muted}%
    Rows: feature dimensions (binary instrument flags, pitch-class bits, continuous values).
    Columns: 30 time frames (1\,s each).
-   Left panel = ground-truth MIDI features.\quad Right panel = \splan{} reconstruction.}
+   Left = ground-truth MIDI features. Right = \splan{} reconstruction.}
 \end{frame}
 
 % ----------------------------------------------------------------
-% 9 — EXP025
+% 7 — RQ1: PROXY TASK
 % ----------------------------------------------------------------
-\begin{frame}{EXP025: Aligned \splan{} Reduces Acoustic Token Uncertainty}
-  \framesubtitle{Proxy prediction head — 5{,}000 steps, 1{,}385 test windows}
+\begin{frame}{RQ1 — First Positive Signal: Proxy Prediction Task}
+  \framesubtitle{Frozen codec + small transformer head predicting acoustic tokens from symbolic representations}
 
   {\small
   \begin{tabular}{p{4.0cm}ccc}
@@ -380,53 +327,22 @@
   \end{tabular}}
 
   \smallskip
-  Aligned beats reason-only by $\Delta{=}{-}0.061$.
-  Aligned beats shuffled by $\Delta{=}{-}0.034$ — the alignment-specific effect.
+  Aligned beats reason-only ($\Delta{=}{-}0.061$) and shuffled ($\Delta{=}{-}0.034$).
+  Learned \splan{} outperforms the hand-crafted rule summary ($-0.048$ vs.\ $-0.013$).
 
   \smallskip
   \begin{tcolorbox}[good]
-    \textbf{First positive result.} Aligned beats both controls.
-    Temporal alignment to the same audio window drives the gain.
-    Claim boundary: proxy task; decoded audio quality is a separate question.
+    \textbf{First evidence for RQ1.} Aligned beats both corrupted controls.
+    Temporal alignment of symbolic content to its own audio window drives the gain.
+    Claim boundary: proxy task; end-to-end integration is tested separately.
   \end{tcolorbox}
 \end{frame}
 
 % ----------------------------------------------------------------
-% 10 — NEGATIVE RESULTS
+% 8 — RQ1: STREAM-NATIVE
 % ----------------------------------------------------------------
-\begin{frame}{Negative Results: Naive Interfaces Do Not Work}
-  \framesubtitle{EXP027 (side-channel row) and EXP028 (adapter gate)}
-
-  \textbf{EXP027 — side-channel row insertion:}
-
-  {\small
-  \begin{tabular}{p{4.5cm}cc}
-    \toprule
-    \textbf{Condition} & \textbf{Test CE} & \textbf{vs.\ reason-only} \\
-    \midrule
-    Reason-only          & \pos{5.360} & baseline \\
-    Aligned \splan{}     & 5.511 & \bad{$+0.151$} \\
-    Shuffled \splan{}    & 5.512 & \bad{$+0.152$} \\
-    Dummy                & 5.510 & \bad{$+0.150$} \\
-    \bottomrule
-  \end{tabular}}
-
-  \smallskip
-  Aligned $\approx$ shuffled $\approx$ dummy: model ignores symbolic content.\\
-  \textbf{EXP028 adapter:} gate converges to $3.4\times10^{-4}$ — training stable, fusion absent.
-
-  \smallskip
-  \begin{tcolorbox}[warn]
-    \textbf{Lesson:} symbolic tokens must enter via the stream-native positional encoding.
-    Side-channel insertion is architecturally incompatible; stability $\neq$ fusion.
-  \end{tcolorbox}
-\end{frame}
-
-% ----------------------------------------------------------------
-% 11 — EXP029
-% ----------------------------------------------------------------
-\begin{frame}{EXP029: Stream-Native Interface Produces a Positive Gap}
-  \framesubtitle{$R_a \to S_{\mathrm{plan}} \to C_a$ layout — 3{,}000 steps, seed 260630}
+\begin{frame}{RQ1 — Replication: Stream-Native Interface Confirms the Gain}
+  \framesubtitle{Full $R_a \to S_{\mathrm{plan}} \to C_a$ layout with matched positional encoding}
 
   {\small
   \begin{tabular}{p{4.0cm}ccc}
@@ -441,23 +357,23 @@
   \end{tabular}}
 
   \smallskip
-  Aligned beats shuffled by $\Delta{=}{-}0.018$ and dummy by $\Delta{=}{-}0.019$.\\
-  Sequence: 151 + 30 + 376 = 557 tokens, \textbf{0\% truncation}.\\
-  Gate (${\sim}0.003$) is small — motivates the longer EXP034B comparison.
+  Aligned beats shuffled ($\Delta{=}{-}0.018$) and dummy ($\Delta{=}{-}0.019$) consistently.
+  Sequence 557 tokens, \textbf{0\% truncation}.
 
   \smallskip
   \begin{tcolorbox}[good]
-    \textbf{Stream-native integration works.}
-    Positive gap appears across aggregated test metrics.
-    Design choice validated over EXP027/028.
+    \textbf{RQ1 holds with end-to-end integration.}
+    The positive gap replicates when \splan{} is inserted as a native third stream —
+    not just as an external side-channel.
+    This rules out a proxy-task artifact.
   \end{tcolorbox}
 \end{frame}
 
 % ----------------------------------------------------------------
-% 12 — EXP034B MAIN RESULT
+% 9 — RQ1: PRIMARY RESULT
 % ----------------------------------------------------------------
-\begin{frame}{EXP034B: Primary Result — Hardened Four-Condition Comparison}
-  \framesubtitle{All conditions identical except stream variant — 800 steps, \texttt{claim\_ready = true}}
+\begin{frame}{RQ1 — Primary Result: Hardened Four-Condition Comparison}
+  \framesubtitle{All four conditions identical except stream variant — matched hyperparameters, fixed seed}
 
   {\small
   \begin{tabular}{p{4.0cm}cccc}
@@ -473,21 +389,24 @@
   \end{tabular}}
 
   \smallskip
-  Gate confirms the model opens the symbolic slot more for aligned (0.177) than
-  shuffled (0.167) or dummy (0.163).
+  Aligned beats both corrupted controls ($\Delta{=}{-}0.014$) on top of a large
+  capacity gain ($-0.245$ vs.\ reason-only).
 
   \smallskip
   \begin{tcolorbox}[good]
-    \textbf{Strongest result.} Aligned beats both corrupted controls ($\Delta{=}{-}0.014$ CE)
-    on top of a large capacity gain ($-0.245$ vs.\ reason-only).\\
-    Boundary: oracle MIDI input; semantic-token CE only; no decoded waveform yet.
+    \textbf{RQ1 answered positively} — most rigorous evidence.
+    Gate confirms the model opens the symbolic slot more for aligned (0.177)
+    than shuffled (0.167) or dummy (0.163).\\
+    Boundary: oracle MIDI input; semantic-token CE only.
   \end{tcolorbox}
 \end{frame}
 
 % ----------------------------------------------------------------
-% 13 — EXP034B DECOMPOSITION
+% 10 — RQ2: DECOMPOSITION + CONSISTENCY
 % ----------------------------------------------------------------
-\begin{frame}{EXP034B: Separating Capacity Effect from Alignment Effect}
+\begin{frame}{RQ2: The Gain Is Alignment-Specific, Not Token Capacity}
+
+  The $-0.259$ CE gain over reason-only decomposes into two distinct effects:
 
   {\small
   \begin{tabular}{p{8.0cm}c}
@@ -502,31 +421,32 @@
   \end{tabular}}
 
   \smallskip
-  The alignment-specific gap is consistent across three independent experiments:
+  The alignment-specific effect is consistent across all three controlled comparisons:
 
   {\small
   \begin{tabular}{p{4.5cm}p{4.0cm}c}
     \toprule
-    \textbf{Experiment} & \textbf{Setup} & \textbf{Aligned vs.\ shuffled} \\
+    \textbf{Comparison} & \textbf{Setup} & \textbf{Aligned vs.\ shuffled} \\
     \midrule
-    EXP025  & Proxy head, 5{,}000 steps  & $-0.034$ \\
-    EXP029  & Stream warmup, 3{,}000 steps & $-0.018$ \\
-    EXP034B & Full hardening, 800 steps  & $-0.014$ \\
+    Proxy task          & Frozen codec, 5{,}000 steps   & $-0.034$ \\
+    Stream-native warmup & End-to-end, 3{,}000 steps    & $-0.018$ \\
+    Hardened comparison & Matched, 800 steps            & $-0.014$ \\
     \bottomrule
   \end{tabular}}
 
   \smallskip
-  \begin{tcolorbox}[key]
-    Consistent direction across independent experiments rules out a single-run artifact.
-    Capacity effect is dominant; alignment-specific effect is smaller but robust.
+  \begin{tcolorbox}[good]
+    \textbf{RQ2 answered positively.} Consistent direction across independent setups rules
+    out a single-run artifact. Capacity effect is dominant; alignment-specific effect is
+    smaller but robust — and corroborated by the gate signal.
   \end{tcolorbox}
 \end{frame}
 
 % ----------------------------------------------------------------
-% 14 — EXP031A RESULTS
+% 11 — RQ3: MIR PROBING
 % ----------------------------------------------------------------
-\begin{frame}{EXP031A: Music Structure Is Recoverable from \splan{}}
-  \framesubtitle{Supervised MIR probing on frozen \splan{} embeddings — test split, step 625}
+\begin{frame}{RQ3: Music Structure Is Recoverable from \splan{}}
+  \framesubtitle{Supervised probing on frozen embeddings vs.\ zero-feature baseline (head bias only)}
 
   {\small
   \begin{tabular}{p{4.0cm}cc}
@@ -543,47 +463,49 @@
     \bottomrule
   \end{tabular}}
 
-  \mute{\footnotesize Red = zero-feature control outperforms \splan{} on that axis.}
+  \mute{\footnotesize Red = zero-feature control outperforms — these axes are prior-dominated.}
 
   \smallskip
   \begin{tcolorbox}[key]
-    A zero-feature baseline (head bias only) is mandatory — high accuracy alone is not
-    evidence of symbolic learning.
-    Weak key ($+0.431$) and pitch-class ($+0.024$) are the strongest safe axes.
+    High accuracy alone is \emph{not} evidence — a zero-feature baseline is mandatory.
+    Weak key ($+0.431$ gap) and pitch-class ($+0.024$ gap) are the strongest safe axes.
+    \textbf{RQ3: qualified positive answer} — key and pitch-class confirmed, meter and
+    instrument micro-F1 excluded.
   \end{tcolorbox}
 \end{frame}
 
 % ----------------------------------------------------------------
-% 15 — EXP031A CAVEATS
+% 12 — RQ3: AXIS SAFETY
 % ----------------------------------------------------------------
-\begin{frame}{EXP031A: Which Axes Are Safe to Claim}
+\begin{frame}{RQ3: Which Axes Can We Claim?}
+  \framesubtitle{Organized by what the zero-feature control reveals about each attribute}
 
   {\small
   \begin{tabular}{p{3.0cm}p{2.5cm}p{6.2cm}}
     \toprule
-    \textbf{Axis} & \textbf{Gap} & \textbf{Status} \\
+    \textbf{Axis} & \textbf{Gap vs.\ zero-feat.} & \textbf{Status} \\
     \midrule
-    Weak key accuracy     & $+0.431$ & \pos{Safe.} Label-shuffle still pending. \\
+    Weak key accuracy     & $+0.431$ & \pos{Safe to claim.} Label-shuffle control pending. \\
     Pitch-class macro-F1  & $+0.024$ & Positive but small; target-prior control needed. \\
     Instrument macro-F1   & $+0.075$ & Some signal; class imbalance must be resolved. \\
     \midrule
-    Instrument micro-F1   & $-0.044$ & \bad{Do not headline.} Zero-feature wins. \\
-    Meter accuracy        & $-0.072$ & \bad{Do not headline.} Common-meter prior dominates. \\
+    Instrument micro-F1   & $-0.044$ & \bad{Excluded.} Common-class prior dominates. \\
+    Meter accuracy        & $-0.072$ & \bad{Excluded.} Common-meter prior dominates. \\
     \bottomrule
   \end{tabular}}
 
   \smallskip
   \begin{tcolorbox}[warn]
-    Paper-safe MIR claim: weak key, pitch-class, instrument macro-F1 —
-    reported alongside the zero-feature gap, not as standalone numbers.
+    Paper-safe claim: weak key, pitch-class, and instrument macro-F1 — always reported
+    \emph{alongside} the zero-feature gap, not as standalone numbers.
     Label-shuffle and target-prior controls are pending.
   \end{tcolorbox}
 \end{frame}
 
 % ----------------------------------------------------------------
-% 16 — ROLL COMPARISON FIGURE
+% 13 — RQ3: QUALITATIVE FIGURE
 % ----------------------------------------------------------------
-\begin{frame}{Qualitative: Reconstruction vs.\ Ground-Truth Piano Roll}
+\begin{frame}{RQ3: Qualitative — Reconstruction vs.\ Ground-Truth Piano Roll}
   \framesubtitle{Slakh Track01501, window 3 (90–120 s) — binary acc 1.000, MSE 0.00130}
 
   \begin{center}
@@ -595,11 +517,43 @@
   {\footnotesize\color{Muted}%
    Left: ground-truth MIDI piano roll.\quad
    Right: pitch-region reconstruction from the \splan{} codec.\\
-   Boundary: this is symbolic feature reconstruction — not MIDI transcription or waveform generation.}
+   Boundary: symbolic feature reconstruction — not MIDI transcription or waveform generation.}
 \end{frame}
 
 % ----------------------------------------------------------------
-% 17 — LIMITATIONS
+% 14 — DESIGN CONSTRAINT
+% ----------------------------------------------------------------
+\begin{frame}{Design Constraint: Stream-Native Interface Is Necessary}
+  \framesubtitle{Two negative results that establish the interface requirement — not incidental failures}
+
+  \textbf{Side-channel insertion:}
+
+  {\small
+  \begin{tabular}{p{4.5cm}cc}
+    \toprule
+    \textbf{Condition} & \textbf{Test CE} & \textbf{vs.\ reason-only} \\
+    \midrule
+    Reason-only          & \pos{5.360} & baseline \\
+    Aligned \splan{}     & 5.511 & \bad{$+0.151$} \\
+    Shuffled \splan{}    & 5.512 & \bad{$+0.152$} \\
+    Dummy                & 5.510 & \bad{$+0.150$} \\
+    \bottomrule
+  \end{tabular}}
+
+  \smallskip
+  Aligned $\approx$ shuffled $\approx$ dummy: model ignores symbolic content entirely.
+  \textbf{Adapter gating:} gate converges to $3.4\times10^{-4}$ — training stable, fusion absent.
+
+  \smallskip
+  \begin{tcolorbox}[warn]
+    Same root cause in both cases: symbolic tokens must enter through the same stream-native
+    positional encoding as $R_a$ and $C_a$.
+    \textbf{This is why the RQ1/RQ2 positive results are non-trivial.}
+  \end{tcolorbox}
+\end{frame}
+
+% ----------------------------------------------------------------
+% 15 — LIMITATIONS
 % ----------------------------------------------------------------
 \begin{frame}{What We Cannot Claim Yet}
 
@@ -612,48 +566,53 @@
       CE results are on semantic tokens only. No waveform decoded from aligned vs.\ shuffled. \\[4pt]
     Oracle MIDI input &
       Aligned MIDI unavailable at inference on real audio. Needs audio-to-\splan{} predictor. \\[4pt]
-    No $S_\mathrm{LLM}$ &
-      Language-supervised tokenizer (open QA, captioning) not yet trained. EXP031B planned. \\[4pt]
+    No LLM-supervised tokenizer &
+      Text-language grounding (open QA, captioning) not yet trained. \\[4pt]
     Pending MIR controls &
-      Label-shuffle and target-prior controls for EXP031A are incomplete. \\[4pt]
+      Label-shuffle and target-prior controls for probing are incomplete. \\[4pt]
     Slakh only &
-      No real-recording or cross-domain transfer evidence exists. \\
+      No real-recording or cross-domain transfer evidence. \\
     \bottomrule
   \end{tabular}}
 
   \smallskip
   \begin{tcolorbox}[warn]
-    \textbf{Next priority:} EXP035 decoded rollout — decode $C_a$ from EXP034B aligned
-    checkpoint to waveform and compare perceptually against shuffled.
+    \textbf{Next priority:} decode $C_a$ from the aligned checkpoint to waveform and
+    compare perceptually against shuffled — converting the token-level claim into
+    perceptual audio evidence.
   \end{tcolorbox}
 \end{frame}
 
 % ----------------------------------------------------------------
-% 18 — CONCLUSION
+% 16 — CONCLUSION
 % ----------------------------------------------------------------
-\begin{frame}{Conclusion: Evidence Ladder}
+\begin{frame}{Conclusion: Three Research Questions Answered}
 
   {\small
-  \begin{tabular}{p{1.8cm}p{7.5cm}p{2.0cm}}
+  \begin{tabular}{p{1.5cm}p{10.5cm}}
     \toprule
-    \textbf{Exp.} & \textbf{Finding} & \textbf{Status} \\
+    \textbf{RQ} & \textbf{Finding} \\
     \midrule
-    EXP024  & Codec: binary acc 0.998, no codebook collapse           & \pos{Done} \\
-    EXP025  & Proxy head: aligned CE $<$ shuffled ($\Delta{=}{-}0.034$) & \pos{Done} \\
-    EXP027  & Side-channel insertion: aligned $\approx$ dummy          & \pos{Instructive} \\
-    EXP028  & Adapter: stable training but gate $\approx 0$            & \pos{Instructive} \\
-    EXP029  & Stream-native warmup: $\Delta{=}{-}0.018$                & \pos{Done} \\
-    EXP034B & Hardened 4-cond.: aligned $\Delta{=}{-}0.014$ vs.\ both  & \pos{\bfseries Done} \\
-    EXP031A & Weak key $+0.431$, pitch-class $+0.024$ vs.\ zero-feat.  & \pos{Done*} \\
+    \textbf{RQ1}\\Acoustic utility &
+      \pos{Positive.}\;\; Aligned \splan{} reduces acoustic token CE in three independent
+      controlled comparisons. Primary result: test CE 5.600 vs.\ reason-only 5.859. \\[8pt]
+    \textbf{RQ2}\\Alignment specificity &
+      \pos{Positive.}\;\; Aligned beats both shuffled and dummy consistently
+      ($\Delta\in[-0.034,-0.014]$ across all three comparisons).
+      Corroborated by gate values: 0.177 > 0.167 > 0.163. \\[8pt]
+    \textbf{RQ3}\\Structural content &
+      \pos{Qualified positive.}\;\; Weak key ($+0.431$) and pitch-class ($+0.024$)
+      confirmed above the zero-feature baseline.
+      Meter and instrument micro-F1 excluded as prior-dominated. \\
     \bottomrule
   \end{tabular}}
-  \mute{\footnotesize *label-shuffle controls pending.}
 
   \smallskip
   \begin{tcolorbox}[good]
-    \textbf{Supported claim:} \splan{} is a compact symbolic codec with acoustic-token
-    utility and MIR-recoverable music structure under controlled Slakh experiments.
-    Aligned beats shuffled and dummy consistently across three independent setups.
+    The design constraint result (side-channel and adapter failures) makes RQ1/RQ2
+    \emph{non-trivial}: a positive claim required finding the right interface first.
+    Our multi-condition protocol (aligned / shuffled / dummy + zero-feature probing)
+    is the methodological contribution — applicable beyond \splan{}.
   \end{tcolorbox}
 \end{frame}
 
@@ -662,8 +621,8 @@
 % ================================================================
 \appendix
 
-\begin{frame}{Backup: EXP034B Per-Codebook Cross-Entropy}
-  \framesubtitle{Aligned \splan{} achieves the lowest CE in every codebook}
+\begin{frame}{Backup: Per-Codebook Cross-Entropy}
+  \framesubtitle{Symbolic benefit distributed across all 8 acoustic codebooks (hardened comparison)}
 
   {\small
   \begin{tabular}{p{3.0cm}cccccccc}
@@ -688,8 +647,8 @@
   \end{tcolorbox}
 \end{frame}
 
-\begin{frame}{Backup: EXP029 Per-Window Case Spectrum}
-  \framesubtitle{Fixed validation examples — boundary cases included to avoid cherry-picking}
+\begin{frame}{Backup: Per-Window Case Spectrum (Stream-Native Warmup)}
+  \framesubtitle{Both positive and boundary cases — no cherry-picking}
 
   {\small
   \begin{tabular}{p{2.0cm}p{2.5cm}p{2.5cm}p{2.0cm}p{3.5cm}}
@@ -705,33 +664,34 @@
 
   \smallskip
   \begin{tcolorbox}[key]
-    The aggregate positive result (test CE 5.766 vs.\ 5.785) holds even though
-    individual windows show mixed margins.
-    Including failure cases prevents cherry-picking in qualitative reports.
+    Aggregate positive result holds even though individual windows show mixed margins.
+    Reporting boundary cases prevents cherry-picking in qualitative reports.
   \end{tcolorbox}
 \end{frame}
 
-\begin{frame}{Backup: EXP030 MIR/Text Target Bank}
-  \framesubtitle{Data infrastructure for supervised symbolic evaluation}
+\begin{frame}{Backup: Dataset — Slakh2100}
+  \framesubtitle{Paired audio and MIDI, track-level split}
 
   {\small
-  \begin{tabular}{lrr}
+  \begin{tabular}{p{2.0cm}rrl}
     \toprule
-    \textbf{Split} & \textbf{LLM examples} & \textbf{QA examples} \\
+    \textbf{Split} & \textbf{Tracks} & \textbf{Windows} & \textbf{Notes} \\
     \midrule
-    Train      & 89{,}630 & 67{,}072 \\
-    Validation & 18{,}517 & 13{,}849 \\
-    Test       & 11{,}012 &  8{,}242 \\
-    \midrule
-    Conversion failures & \multicolumn{2}{c}{0 across all splits} \\
+    Train      & 1{,}289 & 11{,}279 & Track-level split before windowing \\
+    Validation & 270     & 2{,}334  & Zero track overlap with train \\
+    Test       & 151     & 1{,}385  & Held-out; never seen during training \\
     \bottomrule
   \end{tabular}}
 
   \smallskip
+  Track-level splitting prevents musical phrases from appearing in both train and test.
+  All cross-entropy numbers in this presentation are on the held-out \textbf{test set}
+  unless labelled ``valid''.
+
+  \smallskip
   \begin{tcolorbox}[key]
-    EXP030 links each Slakh window to structured MIR attribute labels and text targets.
-    Enables EXP031A probing now; enables LLM-supervised \splan{} tokenizer training
-    (EXP031B) after label-shuffle controls pass.
+    All four conditions in every comparison use the same audio-MIDI windows and split.
+    No experiment uses data outside Slakh.
   \end{tcolorbox}
 \end{frame}
 

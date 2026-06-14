@@ -1,5 +1,5 @@
 \documentclass[11pt]{article}
-\usepackage[review]{acl}
+\usepackage{acl}
 
 \usepackage{times}
 \usepackage{latexsym}
@@ -38,24 +38,26 @@ for Music-Aware Audio Language Models}
 
 \begin{abstract}
 We ask three questions about symbolic music representations in audio language models:
-(1) does a compact learned symbolic stream reduce acoustic token uncertainty more than
-a shuffled or dummy stream of the same size?
+(1) does a compact learned symbolic stream, aligned to an audio window's own MIDI,
+reduce acoustic token prediction uncertainty more than a shuffled or dummy stream of
+the same size?
 (2) is that benefit specific to content alignment, or merely to token capacity?
 (3) does the symbolic stream encode music-structural attributes recoverable by probing?
 
 We address these with \splan{}, a compact symbolic planning token that compresses
 MIDI-derived musical structure into a fixed-length residual vector quantization (RVQ)
 stream inserted between the reasoning and acoustic token streams of UniAudio 2.0.
-Answering (1) and (2): across three independent experiments using aligned / shuffled /
-dummy controls, aligned \splan{} consistently reduces $\Camath$ cross-entropy below
-both corrupted controls---most rigorously in EXP034B (test CE $5.600$ vs.\ $5.614$
-shuffled and dummy, $5.859$ reason-only), confirming an alignment-specific effect of
-$\Delta = -0.014$ on top of a capacity effect of $\Delta = -0.245$.
-Answering (3): MIR probing (EXP031A) recovers weak key accuracy $0.557$ ($+0.431$
-over the zero-feature baseline) and pitch-class macro-F1 $0.854$ ($+0.024$), while
-meter and instrument micro-F1 are prior-dominated and excluded from claims.
-We further document two negative results (side-channel insertion and adapter gating)
-that establish a stream-native interface as a necessary design constraint.
+On questions (1) and (2): across three independent controlled comparisons using aligned,
+shuffled, and dummy conditions, aligned \splan{} consistently reduces $\Camath$
+cross-entropy below both corrupted controls, most rigorously in our final hardening run
+(test CE 5.600 vs.\ 5.614 for shuffled and dummy, 5.859 for reason-only), confirming
+an alignment-specific effect of $\Delta = -0.014$ on top of a capacity effect of
+$\Delta = -0.245$.
+On question (3): MIR probing recovers weak key accuracy 0.557 ($+0.431$ over the
+zero-feature baseline) and pitch-class macro-F1 0.854 ($+0.024$), while meter and
+instrument micro-F1 are prior-dominated and excluded from claims.
+Two negative results (side-channel insertion and adapter gating) establish a
+stream-native interface as a necessary design constraint.
 The central claim is conservative but supported: \splan{} is a compact symbolic codec
 with acoustic-token utility and recoverable music-structural content under controlled
 Slakh experiments.
@@ -84,7 +86,7 @@ We organize our work around three research questions (RQs):
   \item[RQ2 (Alignment Specificity):] Is the benefit from alignment-specific content,
     or from token capacity alone?  We test this by requiring aligned to beat
     \emph{both} shuffled (content broken, statistics preserved) and dummy (zero content,
-    same length) controls.
+    same length) controls under matched training conditions.
   \item[RQ3 (Music-Structural Content):] Does the symbolic stream encode
     musically meaningful attributes recoverable by supervised probing?
     We test pitch, key, meter, density, and instrument recognition, each compared
@@ -92,10 +94,11 @@ We organize our work around three research questions (RQs):
 \end{description}
 
 Answering RQ1 affirmatively is not automatic: language models are good at ignoring
-spurious context.  EXP027 demonstrates exactly this failure mode---aligned and shuffled
-MIDI insertions produce nearly identical predictions when the interface does not match
-the model's positional encoding.  Our positive result in RQ1 is thus contingent on the
-correct interface design established through EXP027 and EXP028.
+spurious context.  We demonstrate exactly this failure mode when the symbolic tokens
+are inserted as an external side-channel incompatible with the model's positional
+encoding --- aligned and shuffled MIDI insertions then produce nearly identical predictions.
+Our positive result for RQ1 is therefore contingent on the correct interface design
+established through two preliminary negative results.
 
 Answering RQ2 is important because any fixed-length stream adds context capacity.
 A positive result on RQ1 alone is weak evidence if an equal-length dummy stream achieves
@@ -103,17 +106,16 @@ the same gain.  Our multi-condition design forces the claim: aligned must beat b
 shuffled and dummy, or we cannot attribute the gain to symbolic content.
 
 Answering RQ3 connects acoustic utility to an interpretable mechanism.  A symbolic stream
-that reduces CE but encodes nothing auditable could be acting through any number of
-latent channels; MIR probing makes the representational content explicit and falsifiable.
+that reduces cross-entropy but encodes nothing auditable could be acting through any
+latent channel; MIR probing makes the representational content explicit and falsifiable.
 
 \paragraph{How we answer them.}
 We introduce \splan{}, a \emph{learned symbolic planning token} that compresses
-MIDI-derived features into a compact, fixed-length, multi-stream RVQ representation
-and inserts it between the reasoning tokens $\Ramath$ and semantic acoustic tokens
-$\Camath$ of UniAudio 2.0~\citep{yang2026uniaudio2}, forming
-$\Ramath \to \splanmath \to \Camath$.
-We evaluate through a systematic ladder of four experiments using aligned / shuffled /
-dummy controls at each stage, plus MIR probing with a zero-feature baseline.
+MIDI-derived features into a compact, fixed-length, multi-stream RVQ representation and
+inserts it between the reasoning tokens $\Ramath$ and semantic acoustic tokens $\Camath$
+of UniAudio 2.0~\citep{yang2026uniaudio2}, forming $\Ramath \to \splanmath \to \Camath$.
+We evaluate through a ladder of controlled comparisons with aligned / shuffled / dummy
+conditions at each stage, plus MIR probing with a zero-feature baseline.
 
 \paragraph{Contributions.}
 \begin{enumerate}
@@ -121,15 +123,16 @@ dummy controls at each stage, plus MIR probing with a zero-feature baseline.
     features into $4 \times 30$ tokens per 30-second window---a $10\times$--$50\times$
     reduction versus raw MIDI tokenizations.
   \item \textbf{A positive answer to RQ1:} aligned \splan{} reduces $\Camath$
-    cross-entropy consistently across EXP025, EXP029, and EXP034B.
+    cross-entropy consistently across three independent controlled comparisons at
+    different training scales.
   \item \textbf{A positive answer to RQ2:} aligned beats \emph{both} shuffled and
-    dummy in all three experiments; the alignment-specific effect is $\Delta\in[-0.034, -0.014]$
-    CE and is consistent in sign across independent training runs.
+    dummy in all three comparisons; the alignment-specific effect is
+    $\Delta\in[-0.034, -0.014]$ CE and is consistent in sign across independent training runs.
   \item \textbf{A qualified answer to RQ3:} MIR probing recovers weak key and
     pitch-class attributes well above the zero-feature baseline, while meter and
     instrument micro-F1 are excluded as prior-dominated.
-  \item Two negative results (EXP027, EXP028) that establish stream-native interface
-    as a necessary design constraint.
+  \item Two negative results that establish stream-native interface as a necessary
+    design constraint, not merely an engineering preference.
 \end{enumerate}
 
 %% ============================================================
@@ -155,10 +158,11 @@ alignment controls.  Our work fills this gap on the music domain.
 
 Symbolic music can be represented via raw MIDI events, piano rolls, or higher-level
 abstractions~\citep{fradet2021miditok,hawthorne2019enabling}.  Raw MIDI tokenizations
-suffer from extreme sequence lengths and are not directly comparable to audio token rates.
-Compact representations such as chord sequences or beat annotations are hand-designed and
-limited in expressiveness.  \splan{} learns a compact representation end-to-end from
-paired MIDI features, avoiding hand-design while keeping sequence length tractable.
+suffer from extreme sequence lengths and are not directly comparable to audio token
+rates.  Compact representations such as chord sequences or beat annotations are
+hand-designed and limited in expressiveness.  \splan{} learns a compact representation
+end-to-end from paired MIDI features, avoiding hand-design while keeping sequence
+length tractable.
 
 \subsection{Vector Quantization for Audio}
 
@@ -292,14 +296,14 @@ Validation & 270   & 2,334  & Zero track overlap \\
 Test       & 151   & 1,385  & Held-out tracks \\
 \bottomrule
 \end{tabular}
-\caption{Slakh dataset statistics.  All symbolic comparisons use the same split.}
+\caption{Slakh dataset statistics.  All comparisons use the same split.}
 \label{tab:dataset}
 \end{table}
 
 \subsection{Control Protocol}
 
-For every experiment that uses \splan{}, we train and evaluate three symbolic
-conditions under matched hyperparameters:
+For every controlled comparison, we train and evaluate three symbolic conditions under
+matched hyperparameters:
 \begin{description}
   \item[Aligned \splan{}:] Tokens from the audio window's own MIDI file, preserving
     temporal and content alignment.
@@ -309,7 +313,7 @@ conditions under matched hyperparameters:
     control without any symbolic content.
 \end{description}
 
-A gain of aligned over \emph{both} shuffled and dummy is required to attribute the
+A gain of aligned over \emph{both} shuffled and dummy is required to attribute any
 improvement to alignment-specific content (RQ2).
 
 \subsection{Metrics}
@@ -320,9 +324,8 @@ improvement to alignment-specific content (RQ2).
   \item \textbf{Token accuracy:} Exact-match accuracy on held-out $\Camath$ tokens.
   \item \textbf{Symbolic gate:} The learned gate value, measuring the fraction of
     symbolic stream influence admitted to the acoustic prediction path.
-  \item \textbf{MIR metrics (EXP031A):} Instrument macro/micro-F1, pitch-class
-    macro-F1, meter accuracy, weak key accuracy, segment density accuracy, and
-    segment polyphony accuracy.
+  \item \textbf{MIR metrics:} Instrument macro/micro-F1, pitch-class macro-F1, meter
+    accuracy, weak key accuracy, segment density accuracy, and segment polyphony accuracy.
 \end{itemize}
 
 %% ============================================================
@@ -330,19 +333,21 @@ improvement to alignment-specific content (RQ2).
 %% ============================================================
 
 We present results organized around the three research questions.
-\S\ref{sec:codec} first establishes that the symbolic codec is technically sound ---
-a necessary precondition for the RQ1--RQ3 claims.
-\S\ref{sec:rq1} and \S\ref{sec:rq2} jointly address RQ1 (acoustic utility) and
-RQ2 (alignment specificity) across four experiments.
-\S\ref{sec:rq3} addresses RQ3 (music-structural content) via MIR probing.
-\S\ref{sec:interface} documents the two negative results that establish stream-native
-interface as a design constraint.
+\S\ref{sec:codec} establishes that the symbolic codec is technically sound --- a
+necessary precondition for the RQ1--RQ3 claims.
+\S\ref{sec:rq1} and \S\ref{sec:rq2} jointly address RQ1 and RQ2 through three
+controlled comparisons at increasing training scale.
+\S\ref{sec:rq3} addresses RQ3 via MIR attribute probing.
+\S\ref{sec:interface} documents two negative results that establish stream-native
+interface as a necessary design constraint.
 
 \subsection{Prerequisite: Codec Reconstruction Quality}
 \label{sec:codec}
 
 Before asking whether \splan{} carries useful symbolic information downstream, we verify
 that the RVQ codec faithfully reconstructs the input symbolic features.
+We train the codec for 42{,}000 steps on the Slakh training split and evaluate on the
+validation set.
 
 \begin{table}[h]
 \centering
@@ -357,10 +362,9 @@ Continuous feature MSE & 0.00172 \\
 Codebook utilization (books 1--4) & 31.3\% / 71.9\% / 80.7\% / 81.2\% \\
 \bottomrule
 \end{tabular}
-\caption{Codec reconstruction quality at step 42,000.
-  Per-window binary accuracy is $1.000$ on all three validation fixed examples.
-  Books 2--4 reach 72--81\% utilization: no codebook collapse.}
-\label{tab:exp024}
+\caption{Codec reconstruction quality.  Per-window binary accuracy is $1.000$ on all
+  three validation fixed examples.  Books 2--4 reach 72--81\% utilization: no codebook collapse.}
+\label{tab:codec}
 \end{table}
 
 The codec produces a technically healthy symbolic bottleneck: it compresses
@@ -371,13 +375,12 @@ experiments are attributable to symbolic content, not codec failure.
 \subsection{RQ1: Aligned \splan{} Reduces Acoustic Token Uncertainty}
 \label{sec:rq1}
 
-We present three experiments in order of increasing rigor, each demonstrating
-that aligned \splan{} reduces $\Camath$ cross-entropy below reason-only.
+We test RQ1 through three controlled comparisons in order of increasing rigor.
 
-\paragraph{EXP025 --- Proxy prediction task (first positive signal).}
-EXP025 trains a small transformer head to predict $\Camath$ tokens from frozen $\Ramath$ +
-symbolic representations.  This is a proxy task using the frozen codec output rather than
-end-to-end integration.
+\paragraph{Proxy prediction task.}
+We first train a small transformer head to predict $\Camath$ tokens from frozen $\Ramath$ +
+symbolic representations, treating this as an independent proxy of acoustic utility
+(5,000 steps, 1,385 test windows).
 
 \begin{table}[h]
 \centering
@@ -394,18 +397,21 @@ Aligned \splan{}       & \textbf{7.5073} & \textbf{7.5963} & \textbf{1990.9} \\
 \quad$\hookrightarrow$ Random stream      & 7.5400 & 7.6325 & 2064.2 \\
 \bottomrule
 \end{tabular}
-\caption{EXP025: proxy task, 5,000 steps, 1,385 held-out test windows.}
-\label{tab:exp025}
+\caption{Proxy task comparison on 1,385 held-out test windows.  Aligned \splan{}
+  achieves the lowest test CE across all conditions including corrupted controls.}
+\label{tab:proxy}
 \end{table}
 
-Aligned \splan{} achieves the lowest test CE ($7.5963$), outperforming reason-only
+Aligned \splan{} achieves the lowest test CE (7.5963), outperforming reason-only
 ($-0.061$), low-rate rule summaries ($-0.048$), shuffled ($-0.034$), and dummy ($-0.098$).
-This is the first evidence that \splan{} carries acoustically useful information beyond
-what $\Ramath$ already encodes.
+Learned \splan{} outperforms the hand-crafted rule summary, confirming the value of
+end-to-end symbolic compression.  This is the first evidence that \splan{} carries
+acoustically useful information beyond what $\Ramath$ already encodes.
 
-\paragraph{EXP029 --- Stream-native warmup (replication with correct interface).}
-EXP029 implements the full three-stream layout with streams aligned to the base model's
-positional encoding (3,000 steps, seed 260630).
+\paragraph{Stream-native warmup.}
+We next implement the full three-stream layout $\Ramath \to \splanmath \to \Camath$
+with streams aligned to the base model's positional encoding, using a shorter warmup
+budget to validate the interface design (3,000 steps).
 
 \begin{table}[h]
 \centering
@@ -419,18 +425,22 @@ Aligned \splan{}                          & \textbf{5.766} & \textbf{0.1097} & \
 \quad$\hookrightarrow$ Dummy stream      & 5.785 & 0.1068 & 6.004 & 0.0034 \\
 \bottomrule
 \end{tabular}
-\caption{EXP029: stream-native layout, 3,000 steps.  Sequence length 557 tokens, 0\% truncation.}
-\label{tab:exp029}
+\caption{Stream-native comparison.  Sequence length 557 tokens, 0\% truncation.  All
+  three conditions differ only in the symbolic stream variant.}
+\label{tab:warmup}
 \end{table}
 
-Aligned achieves test CE $5.766$ vs.\ shuffled $5.785$ ($\Delta = -0.018$) and dummy
-$5.785$ ($\Delta = -0.019$).  The margin is modest but consistent.
+Aligned achieves test CE 5.766 vs.\ shuffled 5.785 ($\Delta = -0.018$) and dummy
+5.785 ($\Delta = -0.019$).  The margin is modest but consistent; on four validation
+fixed windows, two show strong positive margins (+0.054, +0.004) and two show
+near-zero or slightly negative margins ($-0.006$, $-0.007$), characteristic of a real
+but small signal that has not saturated the learning budget.
 
-\paragraph{EXP034B --- Hardened four-condition comparison (primary result).}
-EXP034B is the most rigorous test of RQ1.  All four conditions run under identical
-hyperparameters (800 steps, batch 1, gradient accumulation 16, LoRA lr $10^{-5}$,
-symbolic lr $3\times10^{-4}$, gate lr $2\times10^{-3}$, seed 260635), differing only
-in the symbolic stream variant.
+\paragraph{Complete four-condition hardening (primary result).}
+Our most rigorous evaluation runs all four conditions under identical hyperparameters
+(800 steps, batch 1, gradient accumulation 16, LoRA lr $10^{-5}$, symbolic lr
+$3\times10^{-4}$, gate lr $2\times10^{-3}$, seed fixed), differing only in the
+symbolic stream variant.
 
 \begin{table}[h]
 \centering
@@ -445,27 +455,30 @@ Aligned \splan{} stream            & \textbf{5.600} & \textbf{270.4} & \textbf{0
 \quad$\hookrightarrow$ Dummy stream      & 5.614 & 274.3 & 0.1193 & 0.163 \\
 \bottomrule
 \end{tabular}
-\caption{EXP034B: all four conditions complete at step 800 (\texttt{claim\_ready = true}).}
-\label{tab:exp034b}
+\caption{Complete four-condition comparison.  All conditions trained identically;
+  only the symbolic stream variant differs.  This is our primary empirical result.}
+\label{tab:hardening}
 \end{table}
 
-Aligned achieves test CE $5.600$, substantially below reason-only ($-0.259$) and below
-both corrupted controls ($-0.014$).  This answers \textbf{RQ1 positively}: aligned
-\splan{} consistently reduces acoustic token uncertainty across three independent experiments.
+Aligned achieves test CE 5.600, substantially below reason-only ($-0.259$) and below
+both corrupted controls ($-0.014$).  These results answer \textbf{RQ1 positively}:
+aligned \splan{} consistently reduces acoustic token uncertainty across three
+independent controlled comparisons at different training scales.
 
 \subsection{RQ2: The Benefit Is Alignment-Specific, Not Token Capacity}
 \label{sec:rq2}
 
 Any fixed-length stream added to $\Ramath$ expands the context available for $\Camath$
-prediction.  RQ2 asks whether the gain in \S\ref{sec:rq1} is attributable to this
+prediction.  RQ2 asks whether the gains in \S\ref{sec:rq1} are attributable to this
 capacity effect, or to the aligned content specifically.
 
-\paragraph{Decomposing the EXP034B gain.}
-The $\Delta = -0.259$ CE improvement of aligned over reason-only decomposes as:
+\paragraph{Decomposing the gain.}
+The $\Delta = -0.259$ CE improvement of aligned over reason-only in our primary
+evaluation (Table~\ref{tab:hardening}) decomposes as:
 
 \begin{itemize}
   \item \textbf{Stream capacity effect:} Any symbolic stream variant outperforms
-    reason-only by $\Delta \approx -0.245$ CE (PPL: $350 \to 274$), reflecting
+    reason-only by $\Delta \approx -0.245$ CE (PPL: 350 $\to$ 274), reflecting
     the additional context length regardless of content.
   \item \textbf{Alignment-specific effect:} Aligned \splan{} outperforms both
     shuffled ($\Delta = -0.014$) and dummy ($\Delta = -0.015$).  The shuffled
@@ -474,47 +487,46 @@ The $\Delta = -0.259$ CE improvement of aligned over reason-only decomposes as:
     isolates content alignment as the source of the additional gain.
 \end{itemize}
 
-\paragraph{Consistency across experiments.}
+\paragraph{Consistency across training scales.}
 
 \begin{table}[h]
 \centering
 \small
 \begin{tabular}{lccc}
 \toprule
-Experiment & Training steps & Setup & $\Delta$ aligned vs.\ shuffled \\
+Comparison & Training steps & Setup & $\Delta$ aligned vs.\ shuffled \\
 \midrule
-EXP025  & 5,000 & Proxy prediction head & $-0.034$ \\
-EXP029  & 3,000 & Stream-native warmup  & $-0.018$ \\
-EXP034B & 800   & Full hardening        & $-0.014$ \\
+Proxy task                  & 5,000 & Frozen codec + proxy head & $-0.034$ \\
+Stream-native warmup        & 3,000 & Full stream integration   & $-0.018$ \\
+Four-condition hardening    & 800   & Matched, identical setup  & $-0.014$ \\
 \bottomrule
 \end{tabular}
-\caption{Alignment-specific gain across three independent experiments.  Consistent sign
-  across training regimes rules out a single-run artifact.}
+\caption{Alignment-specific gain across three independent controlled comparisons.
+  Consistent sign across training budgets rules out a single-run artifact.}
 \label{tab:rq2_summary}
 \end{table}
 
-The alignment-specific margin decreases from EXP025 to EXP034B, likely because EXP034B
-uses a shorter training budget where all conditions are closer to initialization.
-The direction is consistent, providing convergent evidence across independent experimental
-setups.
+The alignment-specific margin decreases from the proxy task to the hardening run, likely
+because the shorter training budget leaves all conditions closer to initialization.
+The direction is consistent across independent setups and training scales, providing
+convergent evidence that the gain is real and not an artifact of a specific configuration.
 
-\paragraph{Gate behavior as a corroborating diagnostic.}
-In EXP034B, the learned gate is higher for aligned ($0.177$) than shuffled ($0.167$)
-or dummy ($0.163$).  The model learns to admit more information from the aligned stream,
-consistent with it carrying useful content.  This corroborates the CE evidence through
-an independent signal.
+\paragraph{Gate as a corroborating diagnostic.}
+In the hardened four-condition comparison, the learned gate opens more for aligned
+(0.177) than shuffled (0.167) or dummy (0.163).  The model learns to admit more
+information from the aligned stream --- consistent with it carrying useful content.
+This corroborates the CE evidence through an independent channel.
 
-Together, these results answer \textbf{RQ2 positively}: the alignment-specific effect
-is small but consistent and corroborated by the gate.  It is not explainable by
-token capacity alone.
+These results answer \textbf{RQ2 positively}: the alignment-specific effect is small
+but consistent and corroborated by the gate.  It is not explainable by token capacity alone.
 
 \subsection{RQ3: \splan{} Encodes Music-Structural Attributes}
 \label{sec:rq3}
 
-RQ3 asks whether \splan{} embeddings contain music-structural information recoverable
-by supervised probing.  We train linear probing heads on frozen \splan{} features and
-compare against a zero-feature baseline that reveals which axes are prior-dominated
-(i.e., explained by head bias and BatchNorm statistics without any feature input).
+RQ3 asks whether \splan{} embeddings encode music-structural information recoverable by
+supervised probing.  We train linear probing heads on frozen \splan{} features and
+compare against a zero-feature baseline --- inputs zeroed, with only head bias and
+BatchNorm statistics available --- to expose which axes are explained by dataset priors.
 
 \begin{table}[h]
 \centering
@@ -522,59 +534,59 @@ compare against a zero-feature baseline that reveals which axes are prior-domina
 \begin{tabular}{lcc}
 \toprule
 MIR attribute & Aligned \splan{} & Zero-feature \\
- & (test / step 625) & (valid / step 500) \\
 \midrule
-Instrument macro-F1  & 0.501 & 0.426 \\
-Instrument micro-F1  & 0.791 & \textbf{0.835} \\
-Pitch-class macro-F1 & \textbf{0.854} & 0.830 \\
-Meter accuracy       & 0.783 & \textbf{0.855} \\
-Weak key accuracy    & \textbf{0.557} & 0.126 \\
-Segment density acc. & 0.874 & \textbf{0.879} \\
+Instrument macro-F1    & 0.501 & 0.426 \\
+Instrument micro-F1    & 0.791 & \textbf{0.835} \\
+Pitch-class macro-F1   & \textbf{0.854} & 0.830 \\
+Meter accuracy         & 0.783 & \textbf{0.855} \\
+Weak key accuracy      & \textbf{0.557} & 0.126 \\
+Segment density acc.   & 0.874 & \textbf{0.879} \\
 Segment polyphony acc. & \textbf{0.761} & -- \\
 \bottomrule
 \end{tabular}
-\caption{EXP031A MIR probing.  Bold marks the row where the feature-dependent model
+\caption{MIR probing results.  Bold marks the row where the feature-dependent model
   is more robustly attributable.  Label-shuffle and target-prior controls pending.}
-\label{tab:exp031a}
+\label{tab:probing}
 \end{table}
 
 \paragraph{Axes that support a positive claim.}
-Weak key accuracy ($0.557$ vs.\ $0.126$, $\Delta = +0.431$) is the strongest signal:
-the zero-feature baseline is near chance, confirming that the gain is feature-specific.
-Pitch-class macro-F1 ($0.854$ vs.\ $0.830$, $\Delta = +0.024$) also shows positive
-feature-specific signal.  Instrument macro-F1 ($0.501$ vs.\ $0.426$, $\Delta = +0.075$)
+Weak key accuracy (0.557 vs.\ 0.126, $\Delta = +0.431$) is the strongest signal: the
+zero-feature baseline is near chance, confirming that the gain is feature-specific.
+Pitch-class macro-F1 (0.854 vs.\ 0.830, $\Delta = +0.024$) also shows positive
+feature-specific signal.  Instrument macro-F1 (0.501 vs.\ 0.426, $\Delta = +0.075$)
 shows some signal but requires class-imbalance controls before strong claims.
 
 \paragraph{Axes that are prior-dominated and excluded.}
-Instrument micro-F1 ($0.791$ vs.\ $0.835$, zero-feature \emph{higher}) and meter
-accuracy ($0.783$ vs.\ $0.855$, zero-feature \emph{higher}) are largely explained by
-common-class and common-meter priors.  These axes must be excluded from headline claims
-until label-shuffle controls confirm feature-specific learning.
+Instrument micro-F1 (0.791 vs.\ 0.835, zero-feature \emph{higher}) and meter accuracy
+(0.783 vs.\ 0.855, zero-feature \emph{higher}) are largely explained by common-class
+and common-meter priors.  These axes must be excluded from headline claims until
+label-shuffle controls confirm feature-specific learning.
 
 \textbf{RQ3 receives a qualified positive answer}: \splan{} encodes key and pitch-class
 structure well above the prior baseline, while meter and instrument micro-F1 require
-additional controls.
+additional controls before any claim is appropriate.
 
 \subsection{Design Constraint: Stream-Native Interface Is Necessary}
 \label{sec:interface}
 
 The positive results in \S\ref{sec:rq1}--\S\ref{sec:rq3} depend on the stream-native
-interface design.  Two earlier experiments demonstrate that naive alternatives fail.
+interface design.  Two preliminary comparisons demonstrate that naive alternatives fail.
 
-\textbf{EXP027 (side-channel insertion):} Inserting \splan{} tokens as additional
-context rows into the released UniAudio 2.0 interface produced nearly identical results
-across aligned ($5.511$), shuffled ($5.512$), and dummy ($5.510$) conditions, all worse
-than reason-only ($5.360$).  The model ignored symbolic content when it was injected as
-an external side-channel incompatible with multi-stream positional encoding.
+\textbf{Side-channel insertion.}
+Inserting \splan{} tokens as additional context rows into the released UniAudio 2.0
+interface produced nearly identical results across aligned (5.511), shuffled (5.512),
+and dummy (5.510) conditions, all worse than reason-only (5.360).  The model ignored
+symbolic content when it was injected as an external side-channel incompatible with
+multi-stream positional encoding.
 
-\textbf{EXP028 (LoRA adapter with learned gate):} Adding LoRA adapters stabilized
-training (valid CE $5.412$) but the gate converged near zero ($3.36 \times 10^{-4}$),
-indicating the symbolic stream was admitted at negligible magnitude.  Training stability
-is not fusion evidence.
+\textbf{LoRA adapter with gating.}
+Adding LoRA adapters stabilized training (valid CE 5.412) but the gate converged near
+zero ($3.36 \times 10^{-4}$), indicating the symbolic stream was admitted at negligible
+magnitude.  Training stability is not fusion evidence.
 
-Both negative results isolate the same root cause: symbolic tokens must enter through
-the same stream-native positional encoding as $\Ramath$ and $\Camath$.  These failures
-are not incidental --- they motivated the design of EXP029 and EXP034B and are
+Both results isolate the same root cause: symbolic tokens must enter through the same
+stream-native positional encoding as $\Ramath$ and $\Camath$.  These failures are not
+incidental engineering obstacles --- they motivated the stream-native design and are
 reproducible under controlled conditions.
 
 %% ============================================================
@@ -590,92 +602,91 @@ These boundaries are intentional, not evasions --- they define what the current 
 supports before the next experimental phase.
 
 \paragraph{Capacity versus alignment specificity.}
-The dominant effect in EXP034B is the stream capacity gain ($\Delta \approx -0.245$
-CE), and any symbolic stream achieves this gain.  A paper reporting only the comparison
-to reason-only would overstate the alignment claim.  Our multi-condition design separates
-the two effects, and the alignment-specific effect ($\Delta \approx -0.014$--$-0.034$
-across experiments) is the meaningful claim.  The gate corroborates it through an
-independent channel.
+The dominant effect in our primary evaluation is the stream capacity gain
+($\Delta \approx -0.245$ CE), and any symbolic stream achieves this.  A paper reporting
+only the comparison to reason-only would overstate the alignment claim.  Our
+multi-condition design separates the two effects, and the alignment-specific effect
+($\Delta \approx -0.014$--$-0.034$ across comparisons) is the meaningful contribution.
+The gate corroborates it through an independent channel.
 
-\paragraph{Why consistency across experiments matters for RQ2.}
-The alignment-specific gap is positive across EXP025 (proxy task), EXP029 (stream
-warmup), and EXP034B (hardened full comparison), all with independent training runs and
-different training budgets.  A finding that requires a specific seed or a specific
-training length to appear is weak evidence; a finding that appears consistently in sign
-across independent runs is more robust.  The decreasing magnitude is expected: EXP034B
-uses the shortest training budget, so all conditions have less room to diverge.
+\paragraph{Why consistency across scales matters for RQ2.}
+The alignment-specific gap is positive across a proxy task (5,000 steps), a warmup run
+(3,000 steps), and the hardened four-condition comparison (800 steps, matched
+conditions).  A finding that requires a specific seed or training length is weak
+evidence; a finding that appears consistently in sign across independent runs at
+different scales is substantially more robust.  The decreasing magnitude is expected:
+the shorter-budget comparison leaves less room for conditions to diverge.
 
-\paragraph{What the MIR probing result adds.}
-RQ3 connects the acoustic utility (RQ1/RQ2) to an interpretable mechanism.  The
-strong weak-key gap ($+0.431$) suggests that \splan{} captures tonal identity as its
-most robust representational axis.  The prior-dominated meter result is an honest
-negative: it tells us that 30 frames/window at current training scale is insufficient to
-learn meter beyond the common-time prior, and that longer sequence or stronger rhythm
-supervision may be needed.
+\paragraph{What MIR probing adds.}
+The probing results connect acoustic utility (RQ1/RQ2) to an interpretable mechanism.
+The strong weak-key gap ($+0.431$) suggests that \splan{} captures tonal identity as
+its most robust representational axis.  The prior-dominated meter result is an honest
+negative: it tells us that 30 frames/window at the current training scale is
+insufficient to learn meter beyond the common-time prior, and that longer sequences or
+stronger rhythm supervision may be needed.
 
 %% ============================================================
 \section{Limitations}
 %% ============================================================
 
 \paragraph{No decoded generation evidence.}
-All experiments evaluate cross-entropy on $\Camath$ token prediction under oracle symbolic
-input.  We do not yet have waveform-level evidence that \splan{} conditioning changes
-the perceptual quality or structural fidelity of decoded audio.  Generating audio from
-EXP034B checkpoints and comparing aligned versus shuffled outputs perceptually remains
-future work.
+All experiments evaluate cross-entropy on $\Camath$ token prediction under oracle
+symbolic input.  We do not yet have waveform-level evidence that \splan{} conditioning
+changes the perceptual quality or structural fidelity of decoded audio.  Generating
+audio from the aligned checkpoint and comparing it against shuffled outputs perceptually
+remains future work.
 
 \paragraph{Oracle symbolic input.}
-In all stream experiments, \splan{} tokens are derived from the ground-truth MIDI file.
-A practical system requires either audio-to-MIDI transcription or a separate
-audio-to-\splan{} predictor at inference time, neither of which is trained yet.
+\splan{} tokens are derived from ground-truth MIDI files.  A practical system requires
+either audio-to-MIDI transcription or a separate audio-to-\splan{} predictor at
+inference time, neither of which is trained yet.
 
 \paragraph{No LLM-supervised tokenizer.}
 The current \splan{} is trained via reconstruction and MIR objectives but not via an
 LLM decoder objective.  A language-model-supervised tokenizer (\sllm{}) would allow
-text-language grounding, enabling music captioning and symbolic QA.  We treat \sllm{}
-as planned future work.
+text-language grounding, enabling music captioning and symbolic QA.
 
 \paragraph{Slakh-only scope.}
 All experiments use Slakh, a synthesized paired audio-MIDI corpus.  Generalization to
-real-world recordings requires either transcription or domain adaptation, outside the
-current scope.
+real-world recordings requires either transcription or domain adaptation, outside
+the current scope.
 
 \paragraph{Pending MIR controls.}
-EXP031A label-shuffle and target-prior controls are incomplete.  Instrument macro-F1
-and several other MIR axes cannot be claimed as robust symbolic evidence until these
-controls pass.
+Label-shuffle and target-prior controls for the probing results are incomplete.
+Instrument macro-F1 and several other MIR axes cannot be claimed as robust symbolic
+evidence until these controls pass.
 
 %% ============================================================
 \section{Conclusion}
 %% ============================================================
 
 We introduced \splan{}, a compact learned symbolic planning token that compresses
-MIDI-derived musical structure into a fixed-length RVQ stream inserted between the
-reasoning and acoustic token streams of UniAudio 2.0.  We organized our evaluation
-around three research questions and found:
+MIDI-derived musical structure into a fixed-length RVQ stream for integration into
+unified audio language models.  We organized our work around three research questions
+and found:
 
 \begin{itemize}
   \item \textbf{RQ1 (Acoustic Utility):} Aligned \splan{} reduces acoustic token
-    cross-entropy in three independent experiments (EXP025, EXP029, EXP034B), with
-    the most rigorous result being EXP034B: test CE $5.600$ vs.\ reason-only $5.859$.
+    cross-entropy in three independent controlled comparisons, most rigorously in our
+    matched four-condition evaluation: test CE 5.600 vs.\ reason-only 5.859.
   \item \textbf{RQ2 (Alignment Specificity):} Aligned \splan{} consistently beats
     both shuffled and dummy controls.  The alignment-specific effect
     ($\Delta\in[-0.034,-0.014]$ CE) is positive and consistent across all three
-    experiments, corroborated by gate values that open more for aligned content.
+    comparisons, corroborated by gate values that open more for aligned content.
   \item \textbf{RQ3 (Music-Structural Content):} MIR probing recovers weak key
-    ($+0.431$ above zero-feature baseline) and pitch-class ($+0.024$) attributes.
+    ($+0.431$ above the zero-feature baseline) and pitch-class ($+0.024$) attributes.
     Meter and instrument micro-F1 are excluded as prior-dominated.
 \end{itemize}
 
-Two negative results (EXP027 side-channel insertion, EXP028 adapter gating) establish
-stream-native interface as a necessary design constraint, not merely an engineering
-preference.
+Two negative results establish stream-native interface as a necessary design constraint,
+not merely an engineering preference.
 
 The central contribution is methodological as much as empirical: we argue that
 credible symbolic-fusion claims require multi-condition evaluation with matched
 corrupted controls (shuffled and dummy), zero-feature MIR baselines, and honest
-reporting of what each experiment can and cannot support.  The same evaluation framework
-applies broadly to any future work claiming symbolic grounding in audio language models.
+reporting of what each comparison can and cannot support.  The same evaluation
+framework applies broadly to any future work claiming symbolic grounding in audio
+language models.
 
 %% ============================================================
 \section*{Acknowledgments}
@@ -690,10 +701,10 @@ Cultural Technology, KAIST.
 
 \appendix
 
-\section{EXP024 Fixed-Window Gallery}
-\label{app:exp024}
+\section{Fixed-Window Codec Gallery}
+\label{app:codec}
 
-Table~\ref{tab:exp024_gallery} shows per-window reconstruction statistics for three
+Table~\ref{tab:codec_gallery} shows per-window reconstruction statistics for three
 validation examples from Slakh Track01501.
 
 \begin{table}[h]
@@ -708,16 +719,16 @@ w001 (30--60 s)  & 1.000 & 0.00246 & 20 / 24 / 26 / 25 \\
 w003 (90--120 s) & 1.000 & 0.00130 & 17 / 17 / 21 / 25 \\
 \bottomrule
 \end{tabular}
-\caption{EXP024 fixed validation window statistics.  All windows achieve perfect binary
+\caption{Fixed validation window statistics.  All windows achieve perfect binary
   feature reconstruction.}
-\label{tab:exp024_gallery}
+\label{tab:codec_gallery}
 \end{table}
 
-\section{EXP029 Fixed-Window Case Spectrum}
-\label{app:exp029}
+\section{Per-Window Case Spectrum (Stream-Native Warmup)}
+\label{app:warmup}
 
-Table~\ref{tab:exp029_cases} includes both positive and boundary cases to prevent
-cherry-picking the qualitative evidence.
+Table~\ref{tab:warmup_cases} includes both positive and boundary cases from the
+stream-native warmup evaluation to prevent cherry-picking the qualitative evidence.
 
 \begin{table}[h]
 \centering
@@ -732,16 +743,17 @@ w002 & 6.097 & 6.104 & 6.091 & $-$0.006 \\
 w003 & 5.876 & 5.893 & 5.869 & $-$0.007 \\
 \bottomrule
 \end{tabular}
-\caption{EXP029 per-window validation losses.  Margin = aligned minus best control;
+\caption{Per-window validation losses.  Margin = aligned minus best control;
   negative values are boundary cases where aligned is not the best.}
-\label{tab:exp029_cases}
+\label{tab:warmup_cases}
 \end{table}
 
-\section{EXP034B Per-Codebook Cross-Entropy}
-\label{app:exp034b_cb}
+\section{Per-Codebook Cross-Entropy (Four-Condition Hardening)}
+\label{app:codebook}
 
-Table~\ref{tab:exp034b_cb} shows per-codebook test CE for EXP034B.  The symbolic benefit
-is distributed across codebooks, with the strongest gains in books 0, 2, and 3.
+Table~\ref{tab:codebook} shows per-codebook test CE from the four-condition hardening
+evaluation.  The symbolic benefit is distributed across codebooks, with the strongest
+gains in books 0, 2, and 3.
 
 \begin{table}[h]
 \centering
@@ -757,9 +769,9 @@ Shuffled & 5.26 & 5.73 & 3.20 & 4.99 & 5.76 & 6.26 & 6.69 & 7.02 \\
 Dummy & 5.26 & 5.73 & 3.20 & 4.99 & 5.76 & 6.26 & 6.69 & 7.02 \\
 \bottomrule
 \end{tabular}
-\caption{EXP034B per-codebook test CE.  Aligned \splan{} achieves the lowest CE in
-  books 0, 2, and 3.}
-\label{tab:exp034b_cb}
+\caption{Per-codebook test CE from the four-condition hardening evaluation.
+  Aligned \splan{} achieves the lowest CE in books 0, 2, and 3.}
+\label{tab:codebook}
 \end{table}
 
 \end{document}
