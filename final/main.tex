@@ -141,10 +141,8 @@
 
   \smallskip
   \begin{tcolorbox}[key]
-    Verifying that symbolic injection is \emph{useful} requires more than comparing to
-    no-injection: a shuffled or dummy stream of the same length could produce the same
-    gain from capacity alone.
-    \textbf{Our whole evaluation is designed around this distinction.}
+    The central gap is structural: audio tokens can capture sound texture while
+    missing the discrete musical relations needed for reasoning and control.
   \end{tcolorbox}
 \end{frame}
 
@@ -153,8 +151,8 @@
 % ----------------------------------------------------------------
 \begin{frame}{Three Research Questions Organize This Work}
 
-  {\footnotesize
-  \begin{tabular}{p{2.2cm}p{10.0cm}}
+  {\footnotesize\renewcommand{\arraystretch}{1.35}
+  \begin{tabular}{p{3.0cm}p{9.2cm}}
     \toprule
     \textbf{Question} & \textbf{What we need to show} \\
     \midrule
@@ -163,7 +161,8 @@
       stream of the same size. \\
     \textbf{RQ2}\\Alignment specificity &
       The gain comes from \emph{alignment-specific content}, not token budget.
-      Requires aligned $>$ shuffled AND aligned $>$ dummy. \\
+      % Requires aligned $>$ shuffled AND aligned $>$ dummy.
+      \\
     \textbf{RQ3}\\Structural content &
       Symbolic stream encodes music-structural attributes recoverable by probing,
       verified against a zero-feature baseline. \\
@@ -171,10 +170,6 @@
   \end{tabular}}
 
   \smallskip
-  \begin{tcolorbox}[key]
-    Each comparison uses the same aligned / shuffled / dummy protocol, so gains can be
-    attributed to symbolic content rather than extra tokens alone.
-  \end{tcolorbox}
 \end{frame}
 
 % ----------------------------------------------------------------
@@ -209,13 +204,6 @@
   \splan{} uses a 4-stage RVQ codec trained on MIDI-derived frame features
   (pitch-class, instrument, meter, density).
   Total sequence: $151 + 30 + 376 = \mathbf{557}$ tokens — \textbf{0\% truncation} under 1{,}024 limit.
-
-  \smallskip
-  \begin{tcolorbox}[key]
-    Raw MIDI appending fails: 2{,}000–8{,}000 tokens per window saturates the context,
-    and variable-length sequences cannot be shuffled or dummy-controlled uniformly.
-    \splan{}'s fixed-length RVQ design makes the evaluation protocol possible.
-  \end{tcolorbox}
 \end{frame}
 
 % ----------------------------------------------------------------
@@ -364,28 +352,16 @@
 \begin{frame}{Evaluation Protocol: Every Comparison Uses All Four Conditions}
 
   {\small
-  \begin{tabular}{p{3.0cm}p{4.5cm}p{4.5cm}}
+  \begin{tabular}{p{3.0cm}p{8.8cm}}
     \toprule
-    \textbf{Condition} & \textbf{Content of \splan{} slot} &
-      \textbf{What a gain here proves} \\
+    \textbf{Condition} & \textbf{Content of \splan{} slot} \\
     \midrule
-    Aligned \splan{}  & Tokens from the \emph{same} window's MIDI &
-      Symbolic content + temporal alignment \\[4pt]
-    Shuffled \splan{} & Tokens from a \emph{different} window's MIDI &
-      Token statistics intact; alignment broken \\[4pt]
-    Dummy stream      & Zero / random RVQ codes &
-      Token-budget / capacity effect only \\[4pt]
-    Reason-only       & No \splan{} slot at all &
-      Base model without any symbolic stream \\
+    Aligned \splan{}  & Tokens from the \emph{same} window's MIDI \\[4pt]
+    Shuffled \splan{} & Tokens from a \emph{different} window's MIDI \\[4pt]
+    Dummy stream      & Zero / random RVQ codes \\[4pt]
+    Reason-only       & No \splan{} slot at all \\
     \bottomrule
   \end{tabular}}
-
-  \smallskip
-  \begin{tcolorbox}[good]
-    \textbf{Evaluation criterion:} aligned must beat \emph{both} shuffled and dummy.
-    Shuffled preserves statistics but breaks alignment; dummy removes all content.
-    Together they isolate the alignment-specific effect from pure capacity.
-  \end{tcolorbox}
 \end{frame}
 
 % ----------------------------------------------------------------
@@ -427,12 +403,6 @@
     \includegraphics[width=\textwidth,height=0.58\textheight,keepaspectratio]%
       {splan_recon_track01501_w000_s0000000_feature_heatmap.png}
   \end{center}
-
-  \smallskip
-  {\footnotesize\color{Muted}%
-   Rows: feature dimensions (binary instrument flags, pitch-class bits, continuous values).
-   Columns: 30 time frames (1\,s each).
-   Left = ground-truth MIDI features. Right = \splan{} reconstruction.}
 \end{frame}
 
 % ----------------------------------------------------------------

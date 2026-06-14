@@ -16,7 +16,7 @@ The paper asks three questions about symbolic music representations in audio lan
 
 Unified audio language models predict discrete audio tokens autoregressively and have achieved strong performance across diverse tasks. Music, however, poses a persistent gap. The structural properties most salient to musicians and listeners — harmonic progressions, rhythmic regularity, instrument co-occurrence, phrase boundaries — are encoded in MIDI symbolic representations, not waveform statistics.
 
-The challenge is not just building a symbolic bridge. It is evaluating one credibly. Any fixed-length stream added to the context expands the model's capacity. A positive result against a reason-only baseline alone is weak evidence if an equal-length dummy stream achieves the same gain. Our multi-condition design — aligned, shuffled, and dummy — forces the distinction between symbolic content and token capacity.
+The challenge is not just building a symbolic bridge. It is testing whether symbolic structure changes what the model predicts, rather than simply giving the model more context. That motivates the three research questions on the next slide.
 
 ---
 
@@ -36,7 +36,7 @@ RQ3 on music-structural content: does the symbolic stream encode musically meani
 
 S_plan is inserted as a third stream between the reasoning tokens and the acoustic tokens of UniAudio 2.0, forming the sequence R_a → S_plan → C_a. The total layout fits within the 1,024 context limit with zero truncation.
 
-Raw MIDI was not used for three reasons. Standard tokenizations average 2,000 to 8,000 tokens per window, saturating the context. Event timestamps are asynchronous with audio frames. And variable-length sequences cannot be given fixed-length shuffled or dummy controls — which makes the evaluation design impossible. S_plan's fixed-length RVQ encoding solves all three.
+We use this compact fixed-length codec instead of raw MIDI because raw MIDI is too long and irregular for uniform controls.
 
 ---
 
@@ -68,11 +68,7 @@ The hardened four-condition comparison — the primary result — uses 800 steps
 
 ## Slide 9 — Evaluation Protocol
 
-Every controlled comparison in this work uses four conditions under matched hyperparameters.
-
-Aligned S_plan provides tokens from the audio window's own MIDI file, preserving temporal and content alignment. Shuffled S_plan provides tokens from a randomly selected different window, preserving token statistics but breaking content alignment. The dummy stream provides zero or uniformly random RVQ codes — a token-budget control with no symbolic content. Reason-only is the base model with no S_plan slot.
-
-The evaluation criterion is strict. We treat the effect as alignment-specific only when aligned beats *both* shuffled and dummy. If aligned beats only one control, token statistics or extra capacity could still explain the gain.
+Every controlled comparison uses the same four conditions under matched hyperparameters: aligned S_plan, shuffled S_plan, dummy stream, and reason-only.
 
 ---
 
@@ -86,7 +82,7 @@ This validates the codec before downstream comparison. It means later difference
 
 ## Slide 11 — Prerequisite: Feature Heatmap
 
-The heatmap shows a representative reconstruction. Ground-truth MIDI features are on the left; the S_plan reconstruction is on the right, for a 30-second window of Slakh track 01501. Binary accuracy is 1.000. The codec produces a technically healthy symbolic bottleneck. This figure is about symbolic feature reconstruction; it is not MIDI transcription or waveform generation.
+The heatmap shows a representative reconstruction. Rows are feature dimensions — instrument flags, pitch-class bits, and continuous values — and columns are 30 one-second time frames. Ground-truth MIDI features are on the left; the S_plan reconstruction is on the right, for a 30-second window of Slakh track 01501. Binary accuracy is 1.000. The codec produces a technically healthy symbolic bottleneck. This figure is about symbolic feature reconstruction; it is not MIDI transcription or waveform generation.
 
 ---
 
