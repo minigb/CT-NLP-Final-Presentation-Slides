@@ -50,7 +50,7 @@ All experiments use Slakh2100, a multi-track paired audio-MIDI dataset synthesiz
 
 ## Slide 6 — MIDI Feature Extraction
 
-From each 30-second window, MIDI features are extracted at 100 ms resolution. The binary feature group — 41 dimensions — captures instrument-class presence across 34 Slakh classes, pitch-class activation across 12 semitones, and beat/downbeat phase. The continuous feature group — 12 dimensions — captures instantaneous tempo, note density, polyphony count, and an instrument-weighted energy proxy. Together, this gives a 53-dimensional frame vector normalized per dimension across the training split, yielding approximately 300 frames per window.
+From each 30-second window, MIDI features are extracted at 100 ms resolution from the ground-truth MIDI file, not transcribed from audio. The binary feature group — 41 dimensions — captures instrument-class presence across 34 Slakh classes, pitch-class activation across 12 semitones, and beat/downbeat phase. The continuous feature group — 12 dimensions — captures instantaneous tempo, note density, polyphony count, and an instrument-weighted energy proxy. Together, this gives a 53-dimensional frame vector normalized per dimension across the training split, yielding approximately 300 frames per window. The codec then compresses those approximately 300 frames to a fixed 30-frame representation, or one symbolic frame per second of audio.
 
 ---
 
@@ -142,19 +142,7 @@ As a qualitative illustration, this slide shows a piano roll comparison. Ground-
 
 ---
 
-## Slide 17 — Design Constraint
-
-The positive RQ1 and RQ2 results depend critically on the stream-native interface. Two preliminary comparisons demonstrate that naive alternatives fail, and these failures are not incidental engineering obstacles — they are reproducible under controlled conditions.
-
-Side-channel insertion: inserting S_plan tokens as additional context rows through the released UniAudio 2.0 interface made all symbolic variants worse than reason-only, and aligned, shuffled, and dummy were nearly indistinguishable. The model ignored symbolic content when it was injected as an external side-channel incompatible with the model's multi-stream positional encoding.
-
-LoRA adapter with gating: adding LoRA adapters stabilized training, but the gate converged near zero. Training stability is not fusion evidence.
-
-Both results isolate the same root cause. Symbolic tokens must enter through the same stream-native positional encoding as R_a and C_a. These two failures motivated the stream-native design and establish it as a necessary constraint, not merely an engineering preference.
-
----
-
-## Slide 18 — Current Scope and Next Steps
+## Slide 17 — Current Scope and Next Steps
 
 Five limitations must be stated precisely.
 
@@ -170,7 +158,7 @@ Fifth, Slakh-only scope. All experiments use a synthesized paired audio-MIDI cor
 
 ---
 
-## Slide 19 — Conclusion
+## Slide 18 — Conclusion
 
 The central result is focused but supported. S_plan is a compact symbolic codec with acoustic-token utility and recoverable music-structural content under controlled Slakh experiments.
 
@@ -180,11 +168,19 @@ For RQ2: aligned consistently beats both shuffled and dummy controls. The alignm
 
 For RQ3: MIR probing shows the clearest feature-specific gain for weak key, with a smaller positive signal for pitch-class. Meter and instrument micro-F1 are excluded as prior-dominated.
 
-Two negative results establish stream-native interface as a necessary design constraint.
-
 The contribution is methodological as much as empirical. Matched corrupted controls, zero-feature MIR baselines, and a clear separation between capacity effects and alignment-specific content make the symbolic-fusion evidence interpretable. This evaluation framework applies broadly to future work on symbolic grounding in audio language models.
 
 Thank you.
+
+---
+
+## Appendix Slide 19 — Why Not Just Append Symbolic Tokens?
+
+This backup slide explains why the symbolic stream has to be integrated as a native stream, rather than appended as an external side channel.
+
+In the side-channel version, S_plan tokens were inserted as additional context rows through the released UniAudio 2.0 interface. That naive insertion made all symbolic variants worse than reason-only, and aligned, shuffled, and dummy were nearly indistinguishable. In other words, the model did not actually use the symbolic content when it was injected through an interface that did not match the model's multi-stream positional encoding.
+
+A second preliminary adapter attempt also stabilized training without producing meaningful fusion: the gate stayed near zero. So the lesson is architectural, not just hyperparameter-level. S_plan must enter through the same stream-native R_a → S_plan → C_a interface used by the acoustic streams.
 
 ---
 
