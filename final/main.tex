@@ -351,47 +351,6 @@
 \end{frame}
 
 % ----------------------------------------------------------------
-% 5 — PREREQUISITE: CODEC TABLE
-% ----------------------------------------------------------------
-\begin{frame}{Prerequisite: The Symbolic Codec Reconstructs Faithfully}
-
-  {\small
-  \begin{tabular}{ll}
-    \toprule
-    \textbf{Metric} & \textbf{Value} \\
-    \midrule
-    Validation reconstruction loss              & 0.00918 \\
-    Binary feature accuracy                     & \pos{0.99777} \\
-    Continuous feature MSE                      & \pos{0.00172} \\
-    Codebook utilization — books 1/2/3/4        & 31\% / 72\% / 81\% / 81\% \\
-    \midrule
-    Fixed window \texttt{w000} binary acc / MSE & 1.000 / 0.00174 \\
-    Fixed window \texttt{w001} binary acc / MSE & 1.000 / 0.00246 \\
-    Fixed window \texttt{w003} binary acc / MSE & 1.000 / 0.00130 \\
-    \bottomrule
-  \end{tabular}}
-
-  \smallskip
-  \begin{tcolorbox}[good]
-    Books 2–4 reach 72–81\% utilization — no codebook collapse.
-    This validates the codec before downstream comparison: later differences are
-    not explained by reconstruction failure.
-  \end{tcolorbox}
-\end{frame}
-
-% ----------------------------------------------------------------
-% 6 — PREREQUISITE: CODEC FIGURE
-% ----------------------------------------------------------------
-\begin{frame}{Prerequisite: Feature Heatmap — Target vs.\ Reconstruction}
-  \framesubtitle{Slakh Track01501, window 0 (0–30 s) — binary acc 1.000, MSE 0.00174}
-
-  \begin{center}
-    \includegraphics[width=\textwidth,height=0.58\textheight,keepaspectratio]%
-      {splan_recon_track01501_w000_s0000000_feature_heatmap.png}
-  \end{center}
-\end{frame}
-
-% ----------------------------------------------------------------
 % 7 — RQ1: PROXY TASK
 % ----------------------------------------------------------------
 \begin{frame}{RQ1: Does \splan{} reduce acoustic-token uncertainty?}
@@ -675,6 +634,41 @@
 % BACKUP SLIDES
 % ================================================================
 \appendix
+
+\begin{frame}{Backup: Symbolic Codec Reconstruction}
+
+  {\small
+  \begin{tabular}{ll}
+    \toprule
+    \textbf{Metric} & \textbf{Value} \\
+    \midrule
+    Validation reconstruction loss              & 0.00918 \\
+    Binary feature accuracy                     & \pos{0.99777} \\
+    Continuous feature MSE                      & \pos{0.00172} \\
+    Codebook utilization — books 1/2/3/4        & 31\% / 72\% / 81\% / 81\% \\
+    \midrule
+    Fixed window \texttt{w000} binary acc / MSE & 1.000 / 0.00174 \\
+    Fixed window \texttt{w001} binary acc / MSE & 1.000 / 0.00246 \\
+    Fixed window \texttt{w003} binary acc / MSE & 1.000 / 0.00130 \\
+    \bottomrule
+  \end{tabular}}
+
+  \smallskip
+  \begin{tcolorbox}[good]
+    Books 2–4 reach 72–81\% utilization — no codebook collapse.
+    This validates the codec before downstream comparison: later differences are
+    not explained by reconstruction failure.
+  \end{tcolorbox}
+\end{frame}
+
+\begin{frame}{Backup: Feature Heatmap — Target vs.\ Reconstruction}
+  \framesubtitle{Slakh Track01501, window 0 (0–30 s) — binary acc 1.000, MSE 0.00174}
+
+  \begin{center}
+    \includegraphics[width=\textwidth,height=0.58\textheight,keepaspectratio]%
+      {splan_recon_track01501_w000_s0000000_feature_heatmap.png}
+  \end{center}
+\end{frame}
 
 \begin{frame}{Backup: Per-Codebook Cross-Entropy}
   \framesubtitle{Symbolic benefit distributed across all 8 acoustic codebooks (hardened comparison)}

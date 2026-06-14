@@ -74,21 +74,7 @@ Every controlled comparison uses the same four conditions under matched hyperpar
 
 ---
 
-## Slide 10 — Prerequisite: Codec
-
-Before any downstream result can be trusted, the RVQ codec must faithfully reconstruct input symbolic features. The table shows high binary accuracy, low continuous error, and healthy codebook use without collapse. The fixed validation windows also reconstruct cleanly.
-
-This validates the codec before downstream comparison. It means later differences are not easily explained by reconstruction failure.
-
----
-
-## Slide 11 — Prerequisite: Feature Heatmap
-
-The heatmap shows a representative reconstruction. Rows are feature dimensions — instrument flags, pitch-class bits, and continuous values — and columns are one-second time frames. Ground-truth MIDI features are on the left; the S_plan reconstruction is on the right. The key point is that the reconstruction closely follows the target, so the codec produces a technically healthy symbolic bottleneck. This figure is about symbolic feature reconstruction; it is not MIDI transcription or waveform generation.
-
----
-
-## Slide 12 — RQ1: Acoustic Utility / Proxy Task
+## Slide 10 — RQ1: Acoustic Utility / Proxy Task
 
 The first evidence for RQ1 comes from a proxy prediction task. A small transformer head is trained to predict C_a tokens from frozen R_a plus symbolic representations, over 5,000 steps on 1,385 held-out test windows.
 
@@ -98,7 +84,7 @@ At this point, this is still a proxy setup with a frozen codec. The full end-to-
 
 ---
 
-## Slide 13 — RQ1: Acoustic Utility / Stream-Native
+## Slide 11 — RQ1: Acoustic Utility / Stream-Native
 
 The full three-stream layout — R_a → S_plan → C_a — is then evaluated with streams aligned to the base model's positional encoding, under a shorter warmup budget of 3,000 steps.
 
@@ -108,7 +94,7 @@ The positive gap replicates in a setup that is architecturally distinct from the
 
 ---
 
-## Slide 14 — RQ1: Acoustic Utility / Primary Result
+## Slide 12 — RQ1: Acoustic Utility / Primary Result
 
 The primary evaluation runs all four conditions under fully identical hyperparameters, differing only in the symbolic stream variant.
 
@@ -118,7 +104,7 @@ The learned gate corroborates through an independent channel: the model opens th
 
 ---
 
-## Slide 15 — RQ2: Alignment Specificity
+## Slide 13 — RQ2: Alignment Specificity
 
 RQ2 requires demonstrating that the gain is not explained by token capacity alone.
 
@@ -130,7 +116,7 @@ The gate provides independent corroboration. RQ2 is answered positively: the ali
 
 ---
 
-## Slide 16 — RQ3: Music-Structural Content / MIR Probing
+## Slide 14 — RQ3: Music-Structural Content / MIR Probing
 
 For RQ3, linear probing heads are trained on frozen S_plan embeddings to recover music-structural attributes. The evaluation compares against a zero-feature baseline — inputs zeroed, with only the head bias and BatchNorm statistics available — which exposes dataset priors. The reliable axes should exceed this bar.
 
@@ -142,7 +128,7 @@ RQ3 receives a qualified positive answer: S_plan encodes key and pitch-class str
 
 ---
 
-## Slide 17 — RQ3: Music-Structural Content / Supported Axes
+## Slide 15 — RQ3: Music-Structural Content / Supported Axes
 
 This table summarizes the support by MIR axis. Weak key has the strongest support, pitch-class shows a positive feature-specific signal, and instrument macro-F1 is positive but sensitive to class imbalance. Instrument micro-F1 and meter accuracy are prior-dominated because the zero-feature baseline is higher.
 
@@ -150,13 +136,13 @@ The important habit is to report each axis with its zero-feature gap. Absolute a
 
 ---
 
-## Slide 18 — RQ3: Music-Structural Content / Qualitative
+## Slide 16 — RQ3: Music-Structural Content / Qualitative
 
 As a qualitative illustration, this slide shows a piano roll comparison. Ground-truth MIDI is on the left; the pitch-region reconstruction from the S_plan codec is on the right. The symbolic structure is reconstructed faithfully at this resolution.
 
 ---
 
-## Slide 19 — Design Constraint
+## Slide 17 — Design Constraint
 
 The positive RQ1 and RQ2 results depend critically on the stream-native interface. Two preliminary comparisons demonstrate that naive alternatives fail, and these failures are not incidental engineering obstacles — they are reproducible under controlled conditions.
 
@@ -168,7 +154,7 @@ Both results isolate the same root cause. Symbolic tokens must enter through the
 
 ---
 
-## Slide 20 — Current Scope and Next Steps
+## Slide 18 — Current Scope and Next Steps
 
 Five limitations must be stated precisely.
 
@@ -184,7 +170,7 @@ Fifth, Slakh-only scope. All experiments use a synthesized paired audio-MIDI cor
 
 ---
 
-## Slide 21 — Conclusion
+## Slide 19 — Conclusion
 
 The central result is focused but supported. S_plan is a compact symbolic codec with acoustic-token utility and recoverable music-structural content under controlled Slakh experiments.
 
@@ -199,3 +185,17 @@ Two negative results establish stream-native interface as a necessary design con
 The contribution is methodological as much as empirical. Matched corrupted controls, zero-feature MIR baselines, and a clear separation between capacity effects and alignment-specific content make the symbolic-fusion evidence interpretable. This evaluation framework applies broadly to future work on symbolic grounding in audio language models.
 
 Thank you.
+
+---
+
+## Appendix Slide 20 — Symbolic Codec Reconstruction
+
+Before any downstream result can be trusted, the RVQ codec must faithfully reconstruct input symbolic features. The table shows high binary accuracy, low continuous error, and healthy codebook use without collapse. The fixed validation windows also reconstruct cleanly.
+
+This validates the codec before downstream comparison. It means later differences are not easily explained by reconstruction failure.
+
+---
+
+## Appendix Slide 21 — Feature Heatmap
+
+The heatmap shows a representative reconstruction. Rows are feature dimensions — instrument flags, pitch-class bits, and continuous values — and columns are one-second time frames. Ground-truth MIDI features are on the left; the S_plan reconstruction is on the right. The key point is that the reconstruction closely follows the target, so the codec produces a technically healthy symbolic bottleneck. This figure is about symbolic feature reconstruction; it is not MIDI transcription or waveform generation.
