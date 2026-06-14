@@ -178,32 +178,18 @@
 \begin{frame}{Our Approach: \splan{} as a Third Stream in UniAudio 2.0}
 
   \begin{center}
-  \vspace{0.3cm}
-  \begin{tikzpicture}[
-    box/.style={draw=Blue,fill=LBlue,rounded corners=4pt,
-                minimum height=0.95cm,minimum width=2.6cm,
-                font=\bfseries\normalsize,align=center},
-    newbox/.style={draw=Green,fill=Green!10,rounded corners=4pt,
-                   minimum height=0.95cm,minimum width=2.6cm,
-                   font=\bfseries\normalsize\color{Green},align=center},
-    arr/.style={-{Stealth[scale=1.1]},thick,color=Blue},
-    lbl/.style={font=\small\color{Muted},align=center}
-  ]
-    \node[box]    (ra) {$R_a$\\{\small reasoning}};
-    \node[newbox, right=2.0cm of ra] (sp) {\splan{}\\{\small symbolic}};
-    \node[box,    right=2.0cm of sp] (ca) {$C_a$\\{\small acoustic}};
-    \draw[arr] (ra) -- (sp);
-    \draw[arr] (sp) -- (ca);
-    \node[lbl,below=0.22cm of ra] {8 streams\\151 frames};
-    \node[lbl,below=0.22cm of sp] {4 streams\\30 frames};
-    \node[lbl,below=0.22cm of ca] {8 streams\\376 frames};
-  \end{tikzpicture}
+    \includegraphics[width=\textwidth,height=0.52\textheight,keepaspectratio]%
+      {proposed_method.png}
+
+    \vspace{4pt}
+    {\small
+    Dashed branch = symbolic tokenizer. In our implementation, this is \splan{}:
+    MIDI features $\to$ compact RVQ tokens inserted between $R_a$ and $C_a$.}
   \end{center}
 
   \smallskip
-  \splan{} uses a 4-stage RVQ codec trained on MIDI-derived frame features
-  (pitch-class, instrument, meter, density).
-  Total sequence: $151 + 30 + 376 = \mathbf{557}$ tokens — \textbf{0\% truncation} under 1{,}024 limit.
+  {\small Total sequence: $151 + 30 + 376 = \mathbf{557}$ tokens —
+  \textbf{0\% truncation} under 1{,}024 limit.}
 \end{frame}
 
 % ----------------------------------------------------------------

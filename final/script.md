@@ -34,7 +34,9 @@ RQ3 on music-structural content: does the symbolic stream encode musically meani
 
 ## Slide 4 — Approach
 
-S_plan is inserted as a third stream between the reasoning tokens and the acoustic tokens of UniAudio 2.0, forming the sequence R_a → S_plan → C_a. The total layout fits within the 1,024 context limit with zero truncation.
+This slide shows the proposed method at the UniAudio 2.0 level. The existing UniAudio pipeline already has a text tokenizer, a reasoning codec, audio understanding and generation experts, and reconstruction tokens for audio output.
+
+The red dashed branch is the part we add: a symbolic tokenizer. In our implementation, that symbolic tokenizer is S_plan. It takes MIDI-derived musical features, compresses them with a compact RVQ codec, and inserts the resulting symbolic tokens between the reasoning tokens and the acoustic tokens, forming R_a → S_plan → C_a. The total layout fits within the 1,024 context limit with zero truncation.
 
 We use this compact fixed-length codec instead of raw MIDI because raw MIDI is too long and irregular for uniform controls.
 
