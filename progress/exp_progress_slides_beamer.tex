@@ -79,7 +79,7 @@
 \title{Symbolic-Aware Large Audio Language Models}
 \subtitle{Experiment progress and current evidence boundary for Symbolic-Fused LALMs}
 \author{Symbolic-Fused LALM Team}
-\date{June 13, 2026}
+\date{June 15, 2026}
 
 \begin{document}
 
@@ -573,23 +573,26 @@
   \expfield{Next Step}{After EXP031A controls validate aligned \code{S\_plan} content, run EXP031B \code{S\_LLM} with Llama-3.2-300M first, then compare stronger decoders as an academic ablation.}
 \end{frame}
 
-\begin{frame}{EXP034B: Current Music-Claim Hardening}
+\begin{frame}{EXP034B: Music-Claim Hardening -- Complete}
   \footnotesize
-  \expfield{EXP Objective}{Run the stricter open-gate comparison for the stream-native setup: reason-only versus aligned, shuffled, and dummy \code{S\_plan} streams under matched LoRA/update/data settings.}
+  \expfield{EXP Objective}{Open-gate matched comparison: reason-only versus aligned, shuffled, and dummy \code{S\_plan} streams under identical LoRA / data / step budget (800 steps, seed 260635). All four conditions complete.}
 
-  \begin{tabularx}{\linewidth}{p{3.2cm}p{1.4cm}p{1.7cm}Y}
+  \begin{tabularx}{\linewidth}{p{3.1cm}p{1.35cm}p{1.35cm}p{1.4cm}Y}
     \toprule
-    Condition & Status & Latest CE & Interpretation \\
+    Condition & Test CE & Test PPL & Test Acc & $\Delta$ CE vs aligned \\
     \midrule
-    Reason-only open-gate baseline & done & 5.8590 test & Baseline row available \\
-    Aligned \code{S\_plan} stream & running & 5.2191 train & Main condition; final test row pending \\
-    Shuffled \code{S\_plan} stream & running & 8.8449 train step 3 & Alignment control; local-only logging started \\
-    Dummy stream & missing & -- & Required token-budget control \\
+    Reason-only baseline & 5.8590 & 350.4 & 0.1039 & $+$0.259 \\
+    Aligned \code{S\_plan} stream & \textbf{5.5998} & \textbf{270.4} & \textbf{0.1207} & \textemdash \\
+    $\hookrightarrow$ Shuffled \code{S\_plan} & 5.6144 & 274.3 & 0.1191 & $+$0.015 \\
+    $\hookrightarrow$ Dummy stream & 5.6143 & 274.3 & 0.1193 & $+$0.015 \\
     \bottomrule
   \end{tabularx}
 
   \vspace{0.18cm}
-  \begin{keybox}\textbf{Claim boundary:} EXP034B is still semantic-token stream training. It is not a final text-to-music, song-generation, or MIDI-to-audio LALM checkpoint.\end{keybox}
+  \begin{keybox}\textbf{Claim (paper-safe):} Aligned \code{S\_plan} beats both alignment-corrupted controls by $\approx 0.015$ CE and the no-symbolic reason-only baseline by $0.259$ CE. Gate value is higher for aligned (0.177) than shuffled (0.167) or dummy (0.163), consistent with active symbolic use. \code{claim\_ready = true}.\end{keybox}
+
+  \vspace{0.08cm}
+  \expfield{Claim boundary}{EXP034B is semantic-token stream training under oracle symbolic input. It is not text-to-music, song-generation, or MIDI-to-audio generation.}
 \end{frame}
 
 \begin{frame}{EXP035: Decoded Rollout Bridge}
@@ -636,9 +639,10 @@
     \item Frozen UniAudio2 is not a reliable final music-QA baseline, but its token streams carry recoverable structure.
     \item Raw symbolic MIDI is too long or brittle for a clean UniAudio-style fusion interface.
     \item \code{S\_plan} gives a compact learned symbolic stream with healthy reconstruction and codebook diagnostics.
-    \item Aligned \code{S\_plan} improves acoustic-token prediction compared with shuffled/dummy controls.
-    \item Naive LALM insertion fails, but a stream-native interface gives a small positive control result.
-    \item MIR-supervised EXP031A suggests \code{S\_plan} contains structured musical attributes, pending controls.
+    \item Aligned \code{S\_plan} improves acoustic-token prediction compared with shuffled/dummy controls (EXP025).
+    \item Naive LALM insertion fails; a stream-native warmup (EXP029) gives a small positive control result.
+    \item MIR-supervised EXP031A suggests \code{S\_plan} contains structured musical attributes, with axis-level caveats.
+    \item \textbf{EXP034B (complete):} In the hardened open-gate comparison with all four matched conditions, aligned \code{S\_plan} achieves test CE $5.600$ vs.\ shuffled $5.614$, dummy $5.614$, and reason-only $5.859$. This is the strongest controlled positive result in the ladder.
   \end{enumerate}
 \end{frame}
 
@@ -648,7 +652,7 @@
     \toprule
     Rank & Experiment & Why it matters & Command status \\
     \midrule
-    P0 & EXP034B controls & Makes aligned vs shuffled vs dummy stream comparison paper-safe & Aligned and shuffled running; dummy still needed \\
+    P0 & EXP034B controls & Makes aligned vs shuffled vs dummy stream comparison paper-safe & \textbf{Complete:} aligned 5.600 $<$ shuffled 5.614 $<$ dummy 5.614 $<$ reason-only 5.859 \\
     P0 & EXP035 decoded rollout bridge & Turns token-stream checkpoints into waveform examples for the demo & Run after EXP034B checkpoints finish \\
     P1 & EXP031A zero/label-shuffle controls & Separates MIR priors/head bias from symbolic content & Complete before stronger MIR claims \\
     P1 & Final trainer backend wiring & Required for true Symbolic-Aware generation LALM training & Not wired yet; dry-run contract exists \\
@@ -660,7 +664,7 @@
 \begin{frame}{Team Handoff Wording}
   \footnotesize
   \begin{block}{What we can say}
-    We have a compact learned symbolic planning codec, \code{S\_plan}, that reconstructs MIDI-derived structure, improves acoustic-token prediction under aligned-vs-corrupted controls, and supports MIR structure recovery in EXP031A pending control completion.
+    We have a compact learned symbolic planning codec, \code{S\_plan}, that (1) reconstructs MIDI-derived structure faithfully (EXP024), (2) improves acoustic-token prediction under aligned-vs-corrupted controls in three independent experiments (EXP025, EXP029, EXP034B), and (3) supports MIR structure recovery on pitch-class, density, and key axes pending label-shuffle controls (EXP031A). EXP034B is the strongest result: all four matched conditions complete, aligned beats both controls by $\approx 0.015$ CE.
   \end{block}
 
   \vspace{0.3cm}
@@ -678,7 +682,8 @@
         \item EXP024 reconstruction and codebook health.
         \item EXP025 aligned improvement over corrupted controls.
         \item EXP029 stream-native positive gap.
-        \item EXP031A MIR recovery baseline.
+        \item \textbf{EXP034B complete:} aligned 5.600 $<$ both controls 5.614 $<$ reason-only 5.859; gate opens for aligned.
+        \item EXP031A MIR recovery baseline (pitch-class, density, key).
       \end{itemize}
     \end{column}
     \begin{column}{0.48\linewidth}
