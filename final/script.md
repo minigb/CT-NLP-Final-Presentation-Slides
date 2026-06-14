@@ -138,7 +138,7 @@ The important habit is to report each axis with its zero-feature gap. Absolute a
 
 ## Slide 16 — RQ3: Music-Structural Content / Qualitative
 
-As a qualitative illustration, this slide shows a piano roll comparison. Ground-truth MIDI is on the left; the pitch-region reconstruction from the S_plan codec is on the right. The symbolic structure is reconstructed faithfully at this resolution.
+As a qualitative illustration, this slide shows a piano roll comparison. Ground-truth MIDI is on the left; the pitch-region reconstruction from the S_plan codec is on the right. The symbolic structure is reconstructed faithfully at this resolution. This is still symbolic feature reconstruction, not MIDI transcription or waveform generation.
 
 ---
 

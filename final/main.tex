@@ -522,7 +522,7 @@
   \end{tabular}}
 
   \vspace{4pt}
-  {\footnotesize\color{Muted} Report each MIR axis with its zero-feature gap; absolute accuracy alone is not enough.}
+  {\footnotesize\color{Muted} Gap = aligned \splan{} score - zero-feature control.}
 \end{frame}
 
 % ----------------------------------------------------------------
@@ -532,15 +532,9 @@
   \framesubtitle{Qualitative reconstruction: Slakh Track01501, window 3 (90–120 s)}
 
   \begin{center}
-    \includegraphics[width=\textwidth,height=0.58\textheight,keepaspectratio]%
+    \includegraphics[width=\textwidth,height=0.69\textheight,keepaspectratio]%
       {splan_recon_track01501_w003_s0009000_roll_comparison.png}
   \end{center}
-
-  \smallskip
-  {\footnotesize\color{Muted}%
-   Left: ground-truth MIDI piano roll.\quad
-   Right: pitch-region reconstruction from the \splan{} codec.\\
-   This shows symbolic feature reconstruction, not MIDI transcription or waveform generation.}
 \end{frame}
 
 % ----------------------------------------------------------------
