@@ -89,30 +89,32 @@
 % 0 — TITLE
 % ----------------------------------------------------------------
 \begin{frame}[plain]
-  \begin{tikzpicture}[remember picture, overlay]
-    \fill[Navy] (current page.north west)
-                rectangle ([yshift=-4.8cm]current page.north east);
+  \makebox[\textwidth][l]{\hspace*{-1cm}%
+  \begin{tikzpicture}
+    \path[use as bounding box] (0,0) rectangle (\paperwidth,\paperheight);
+    \fill[Navy] (0,4.2cm) rectangle (\paperwidth,\paperheight);
     \node[anchor=north west, inner sep=0pt]
-      at ([xshift=0.5cm,yshift=-0.28cm]current page.north west)
+      at (0.5cm,8.72cm)
       {\tiny\color{LBlue!80}%
        KAIST Graduate School of Cultural Technology\enspace\textbullet\enspace%
        CT-NLP Final Presentation\enspace\textbullet\enspace June 2026};
     \node[anchor=north west,text width=14.5cm,inner sep=0pt]
-      at ([xshift=0.5cm,yshift=-0.85cm]current page.north west)
+      at (0.5cm,8.15cm)
       {\fontsize{17}{21}\selectfont\bfseries\color{white}%
        Toward Symbolic-Aware Music Language Models};
     \node[anchor=north west,text width=13cm,inner sep=0pt]
-      at ([xshift=0.5cm,yshift=-1.80cm]current page.north west)
+      at (0.5cm,7.20cm)
       {\normalsize\color{LBlue}%
        Compact Learned Symbolic Planning Tokens for Controlled Music Fusion};
     \node[anchor=north west,inner sep=0pt]
-      at ([xshift=0.5cm,yshift=-2.75cm]current page.north west)
+      at (0.5cm,6.25cm)
       {\normalsize\color{white!80!Navy}%
        Dabin Kim\quad Minhee Lee\quad Ji Jiaxian\quad Aner Zheng};
     \node[anchor=north west,inner sep=0pt]
-      at ([xshift=0.5cm,yshift=-3.35cm]current page.north west)
+      at (0.5cm,5.65cm)
       {\small\color{LBlue!70}Graduate School of Cultural Technology, KAIST};
   \end{tikzpicture}
+  }
 
 \end{frame}
 
@@ -143,7 +145,7 @@
 % ----------------------------------------------------------------
 % 2 — RESEARCH QUESTIONS
 % ----------------------------------------------------------------
-\begin{frame}{Three Research Questions Organize This Work}
+\begin{frame}[t]{Three Research Questions Organize This Work}
 
   {\footnotesize\renewcommand{\arraystretch}{1.25}
   \begin{tabular}{p{3.0cm}p{9.2cm}}
@@ -152,13 +154,13 @@
     \midrule
     \parbox[t]{3.0cm}{\textbf{RQ1}\\Music-aware\\understanding} &
       \parbox[t]{9.2cm}{Does aligned symbolic structure improve music-aware understanding?
-      Metric evidence: aligned CE $<$ shuffled/dummy controls.} \\
+      \\[-1pt] Metric evidence: aligned CE $<$ shuffled/dummy controls.} \\[4pt]
     \parbox[t]{3.0cm}{\textbf{RQ2}\\Alignment-specific\\understanding} &
       \parbox[t]{9.2cm}{Does the benefit depend on correct symbolic-audio alignment?
-      Metric evidence: aligned CE $<$ shuffled/dummy; gate higher.} \\
+      \\[-1pt] Metric evidence: aligned CE $<$ shuffled/dummy; gate higher.} \\[4pt]
     \parbox[t]{3.0cm}{\textbf{RQ3}\\Music-structural\\understanding} &
       \parbox[t]{9.2cm}{Does \splan{} support music-structural understanding?
-      Metric evidence: MIR probing gaps over zero-feature baselines.} \\
+      \\[-1pt] Metric evidence: MIR probing gaps over zero-feature baselines.} \\
     \bottomrule
   \end{tabular}}
 
@@ -518,7 +520,7 @@
 \begin{frame}{Current Scope and Next Steps}
 
   {\small
-  \begin{tabular}{p{3.0cm}p{9.0cm}}
+  \begin{tabular}{p{3.6cm}p{8.4cm}}
     \toprule
     \textbf{Gap} & \textbf{Why it matters} \\
     \midrule

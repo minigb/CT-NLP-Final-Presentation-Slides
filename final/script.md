@@ -12,7 +12,7 @@ Good afternoon, everyone. This is joint work from Dabin Kim, Minhee Lee, Ji Jiax
 
 ## Slide 2 — Problem
 
-Unified audio language models predict discrete audio tokens autoregressively and have achieved strong performance across diverse tasks. Music, however, poses a persistent gap. The structural properties like harmonic progressions, rhythmic regularity, instrument co-occurrence, phrase boundaries, are encoded in MIDI symbolic representations, not waveform statistics.
+Unified audio language models predict discrete audio tokens autoregressively and have achieved strong performance across diverse tasks. Music, however, the structural properties like harmonic progressions, rhythmic regularity, instrument co-occurrence, phrase boundaries, are encoded in MIDI symbolic representations, not waveform statistics.
 
 So we propose to inject a compact symbolic stream into the LALM context, aligned to the model's positional encoding, to test whether it can help the model use musical structure. 
 
