@@ -54,13 +54,19 @@ All experiments use Slakh2100, a multi-track paired audio-MIDI dataset synthesiz
 
 ## Slide 6 — MIDI Feature Extraction
 
-From each 30-second window, MIDI features are extracted at 100 ms resolution from the ground-truth MIDI file, not transcribed from audio. The binary feature group — 41 dimensions — captures instrument-class presence across 34 Slakh classes, pitch-class activation across 12 semitones, and beat/downbeat phase. The continuous feature group — 12 dimensions — captures instantaneous tempo, note density, polyphony count, and an instrument-weighted energy proxy. Together, this gives a 53-dimensional frame vector normalized per dimension across the training split, yielding approximately 300 frames per window. The codec then compresses those approximately 300 frames to a fixed 30-frame representation, or one symbolic frame per second of audio.
+From each 30-second window, MIDI features are extracted at 100 ms resolution from the ground-truth MIDI file, not transcribed from audio. The binary feature group — 41 dimensions — captures instrument-class presence across 34 Slakh classes, pitch-class activation across 12 semitones, and beat/downbeat phase. The continuous feature group — 12 dimensions — captures instantaneous tempo, note density, polyphony count, and an instrument-weighted energy proxy.
+
+Together, this gives a 53-dimensional frame vector. The frame count comes from the 100 ms resolution: 100 ms is 0.1 seconds, so 30 seconds divided by 0.1 seconds is about 300 frames. Each feature dimension is normalized using training-set statistics, so the binary and continuous values are on comparable scales for the codec. The codec then compresses those approximately 300 frames to a fixed 30-frame representation, or one symbolic frame per second of audio.
 
 ---
 
 ## Slide 7 — Codec Architecture
 
-UniAudio predicts acoustic semantic tokens after the reasoning/audio-representation stream. So we insert S_plan in between: R_a gives the model the audio context, S_plan gives a compact symbolic plan aligned to that same window, and then the model predicts C_a with both sources available.
+In the paper's stream layout, the first audio token stream is R_a. These are UniAudio's reasoning tokens: low-rate, language-aligned audio representations from the ReasoningCodec, meant to capture high-level semantic and contextual content.
+
+The third audio token stream is C_a. These are reconstruction or acoustic tokens: an RVQ stream used for fine-grained acoustic reconstruction and generation. In our experiments, C_a is the prediction target, so lower CE means the model predicts this acoustic-token stream better.
+
+S_plan is inserted between them. R_a gives the model high-level audio context, S_plan adds the compact symbolic structure aligned to the same window, and then the model predicts C_a using both sources. This is why S_plan should be stream-native rather than an appended MIDI side note.
 
 <!-- This position matters because S_plan is not meant to be a separate side note or an appended MIDI string. It has to live inside the same autoregressive stream and positional convention as the audio tokens. If the symbolic information is injected as an irregular side channel, the model may not fuse it with the acoustic stream, and the comparison becomes harder to interpret.
 
